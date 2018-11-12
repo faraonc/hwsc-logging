@@ -1,4 +1,4 @@
-package logtag
+package logger
 
 import (
 	"log"
@@ -20,6 +20,6 @@ func LogInfo (args ...string) {
 	log.Printf("%s %s", Info, strings.Join(args, " "))
 }
 
-func LogFatal (args ...string) {
-	log.Printf("%s %s", Fatal, strings.Join(args, " "))
+func LogFatal (args ...string, ) {
+	log.Fatalf("%s %s", Fatal, strings.Join(args, " "))
 }
