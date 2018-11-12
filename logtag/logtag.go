@@ -16,6 +16,10 @@ func LogRequestService (svc string) {
 	log.Printf("%s Requesting %s service", Info, svc)
 }
 
-func LogGeneral (args ...string) {
-	log.Printf("%s", strings.Join(args, " "))
+func LogInfo (args ...string) {
+	log.Printf("%s %s", Info, strings.Join(args, " "))
+}
+
+func LogFatal (args ...string) {
+	log.Printf("%s %s", Fatal, strings.Join(args, " "))
 }
