@@ -6,20 +6,20 @@ import (
 )
 
 const (
-	Debug = "[DEBUG]"
-	Info = "[INFO]"
-	Error = "[ERROR]"
-	Fatal = "[FATAL]"
+	LogTagDebug = "[DEBUG]"
+	LogTagInfo = "[INFO]"
+	LogTagError = "[ERROR]"
+	LogTagFatal = "[FATAL]"
 )
 
-func LogRequestService (svc string) {
-	log.Printf("%s Requesting %s service", Info, svc)
+func RequestService (svc string) {
+	log.Printf("%s Requesting %s service", LogTagInfo, svc)
 }
 
-func LogInfo (args ...string) {
-	log.Printf("%s %s", Info, strings.Join(args, " "))
+func Info (args ...string) {
+	log.Printf("%s %s", LogTagInfo, strings.Join(args, " "))
 }
 
-func LogFatal (args ...string, ) {
-	log.Fatalf("%s %s", Fatal, strings.Join(args, " "))
+func Fatal (args ...string, ) {
+	log.Fatalf("%s %s", LogTagFatal, strings.Join(args, " "))
 }
