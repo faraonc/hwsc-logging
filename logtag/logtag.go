@@ -1,6 +1,9 @@
 package logtag
 
-import "log"
+import (
+	"log"
+	"strings"
+)
 
 const (
 	Debug = "[DEBUG]"
@@ -11,4 +14,8 @@ const (
 
 func LogRequestService (svc string) {
 	log.Printf("%s Requesting %s service", Info, svc)
+}
+
+func LogGeneral (args ...string) {
+	log.Printf("%s", strings.Join(args, " "))
 }
