@@ -20,6 +20,10 @@ func Info (args ...string) {
 	log.Printf("%s %s", LogTagInfo, strings.Join(args, " "))
 }
 
-func Fatal (args ...string, ) {
+func Error (args ...string) {
+	log.Printf("%s %s", LogTagError, strings.Join(args, " "))
+}
+
+func Fatal (args ...string) {
 	log.Fatalf("%s %s", LogTagFatal, strings.Join(args, " "))
 }
