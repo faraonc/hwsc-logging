@@ -17,11 +17,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2bd24f5e7b3f6a5cd807e2fce1363b0bb9b32b3700b4db327b938c8501328e4c"
+  digest = "1:79729c0558acb5024ec5c124f304b186e90cd560d02df2ae4903ec716e059522"
   name = "github.com/hwsc-org/hwsc-api-blocks"
   packages = ["int/hwsc-app-gateway-svc/proto"]
   pruneopts = "UT"
-  revision = "e9606e72c6f72e79c8b1ab3ed136b4e6cf95cb81"
+  revision = "eed02f886d3f0a426a251291a8443b617754ac0c"
 
 [[projects]]
   branch = "master"
