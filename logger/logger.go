@@ -6,24 +6,32 @@ import (
 )
 
 const (
+	// LogTagDebug debug tag
 	LogTagDebug = "[DEBUG]"
+	// LogTagInfo informational tag
 	LogTagInfo = "[INFO]"
+	// LogTagError error tag
 	LogTagError = "[ERROR]"
+	// LogTagFatal failure tag
 	LogTagFatal = "[FATAL]"
 )
 
-func RequestService (svc string) {
+// RequestService logs service request
+func RequestService(svc string) {
 	log.Printf("%s Requesting %s service", LogTagInfo, svc)
 }
 
-func Info (args ...string) {
+// Info provides informational logging
+func Info(args ...string) {
 	log.Printf("%s %s", LogTagInfo, strings.Join(args, " "))
 }
 
-func Error (args ...string) {
+// Error provides error logging
+func Error(args ...string) {
 	log.Printf("%s %s", LogTagError, strings.Join(args, " "))
 }
 
-func Fatal (args ...string) {
+// Fatal provides failure logging and shutting down application
+func Fatal(args ...string) {
 	log.Fatalf("%s %s", LogTagFatal, strings.Join(args, " "))
 }
