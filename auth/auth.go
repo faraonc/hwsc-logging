@@ -7,7 +7,6 @@ import (
 	"crypto/sha512"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	pb "github.com/hwsc-org/hwsc-api-blocks/int/hwsc-app-gateway-svc/proto"
 	"github.com/hwsc-org/hwsc-lib/consts"
@@ -16,48 +15,87 @@ import (
 	"time"
 )
 
-// Authority ensures the client is authorized.
+// Authority ensures the identification is authorized.
 type Authority struct {
-	token  *pb.Token
-	secret *pb.Secret
-	// TODO incorporate permission level later
+	id                 *pb.Identification
+	body               *Body
+	permissionRequired Permission
 }
 
-// Authorize the Token using a Secret
-func (a *Authority) Authorize(token *pb.Token, secret *pb.Secret) error {
-	if token == nil {
-		return consts.ErrNilToken
+// Authorize the identification and generates the body.
+// Returns an error if not authorized
+func (a *Authority) Authorize(id *pb.Identification, permissionRequired Permission) error {
+	if a.id == nil {
+		return consts.ErrNilIdentification
 	}
-	if secret == nil {
+	if a.id.Secret == nil {
 		return consts.ErrNilSecret
 	}
+	// a.body can be nil because we generate the body on Validate()
+	if strings.TrimSpace(id.Token) == "" {
+		return consts.ErrEmptyToken
+	}
+	a.permissionRequired = permissionRequired
 	if err := a.Validate(); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Invalidate the Token
+// Invalidate the token.
 func (a *Authority) Invalidate() {
-	a.token = nil
-	a.secret = nil
+	a.id = nil
+	a.body = nil
 }
 
-// IsAuthorized checks if the Token is authorized using a Secret
+// Validate checks if the token is authorized using a secret.
+// Returns an error if not valid.
 func (a *Authority) Validate() error {
-	if a.HasExpired() {
-		return errors.New("dipshit  expired")
+	if a.id == nil {
+		return consts.ErrNilIdentification
 	}
-	if err := a.check(); err != nil {
+	if a.body == nil {
+		return consts.ErrNilBody
+	}
+	tokenSignature := strings.Split(a.id.Token, ".")
+	// check 1: do we have a header, body, and signature?
+	if len(tokenSignature) != 3 {
+		return consts.ErrIncompleteToken
+	}
+	// check 2: decode body
+	decodedBody, err := base64Decode(tokenSignature[1])
+	if err != nil {
 		return err
+	}
+	// check 3: parses body from string to a struct
+	// a.body here is mutated
+	if err := json.Unmarshal([]byte(decodedBody), a.body); err != nil {
+		return err
+	}
+	// check 4: checks permission requirement
+	if a.body.Permission < a.permissionRequired {
+		return consts.ErrInvalidPermission
+	}
+	// check 5: check expiration
+	if a.HasExpired() {
+		return consts.ErrExpiredToken
+	}
+	// check 6: rebuild the signature using the secret
+	suspectedSignature := buildTokenSignature(tokenSignature[0], tokenSignature[1], a.id.Header.Alg, a.id.Secret)
+	// the signature in the token should be the same with the suspected signature
+	if a.id.Token != suspectedSignature {
+		return consts.ErrInvalidSignature
 	}
 	return nil
 }
 
-// HasExpired checks if the Token has expired
-// Returns true if token has expired or timestamp is nil
+// HasExpired checks if the token has expired.
+// Returns true if token has expired or body is nil.
 func (a *Authority) HasExpired() bool {
-	expirationTime := a.token.Payload.ExpirationTimestamp
+	if a.body == nil {
+		return true
+	}
+	expirationTime := a.body.ExpirationTimestamp
 	if expirationTime == 0 {
 		return true
 	}
@@ -67,92 +105,61 @@ func (a *Authority) HasExpired() bool {
 	return false
 }
 
-func (a *Authority) check() error {
-	// TODO error checking
-	tokenSignature := strings.Split(a.token.Signature, ".")
-	// check if we have a header, payload, signature
-	if len(tokenSignature) != 3 {
-		return errors.New("invalid token: token should contain header, payload and secret")
-	}
-
-	// rebuild the signature using the secret
-	var bufferHeaderPayload bytes.Buffer
-	bufferHeaderPayload.WriteString(tokenSignature[0])
-	bufferHeaderPayload.WriteString(".")
-	bufferHeaderPayload.WriteString(tokenSignature[1])
-	encodedHeaderPayload := bufferHeaderPayload.String()
-	encodedSignature := hashSignature(a.token.Header.Alg, encodedHeaderPayload, a.secret)
-	var bufferTokenSignature bytes.Buffer
-	bufferTokenSignature.WriteString(encodedHeaderPayload)
-	bufferTokenSignature.WriteString(".")
-	bufferTokenSignature.WriteString(encodedSignature)
-	suspectedSignature := bufferTokenSignature.String()
-
-	// the signature in the token should be the same with the suspected signature
-	if a.token.Signature != suspectedSignature {
-		return errors.New("dipshit hacker")
-	}
-	return nil
-}
-
-func NewToken(alg pb.Algorithm, typ pb.Type, uuid string, permission pb.Permission, secret *pb.Secret) (*pb.Token, error) {
-	header := &pb.Header{
-		Alg: alg,
-		Typ: typ,
-	}
-
-	payload := &pb.Payload{
-		Uuid:            uuid,
-		PermissionLevel: permission,
-	}
-
-	token := &pb.Token{
-		Header:  header,
-		Payload: payload,
-	}
-	if err := encode(token, secret); err != nil {
-		return nil, err
-	}
+// NewToken generates token string using a header, body, and secret.
+// Return error if an error exists during signing.
+func NewToken(header *pb.Header, body *Body, secret *pb.Secret) (string, error) {
 	// token expires in 2 hours
-	token.Payload.ExpirationTimestamp = time.Now().Add(time.Hour * time.Duration(2)).Unix()
-
-	return token, nil
+	body.ExpirationTimestamp = time.Now().Add(time.Hour * time.Duration(2)).Unix()
+	tokenString, err := getTokenSignature(header, body, secret)
+	if err != nil {
+		return "", err
+	}
+	return tokenString, nil
 }
 
-func encode(token *pb.Token, secret *pb.Secret) error {
-	// TODO pre-error checking
-	// Token Signature = <encoded header>.<encoded payload>.<hashed(<encoded header>.<encoded payload>)>
+// getTokenSignature gets the token signature using the encoded header, body, and secret key.
+// Return error if an error exists during signing.
+func getTokenSignature(header *pb.Header, body *Body, secret *pb.Secret) (string, error) {
+	// Token Signature = <encoded header>.<encoded body>.<hashed(<encoded header>.<encoded body>)>
 	// 1. Encode the header
-	encodedHeader, err := base64Encode(token.Header)
+	encodedHeader, err := base64Encode(header)
 	if err != nil {
-		return err
+		return "", err
 	}
-	// 2. Encode the payload
-	encodedPayload, err := base64Encode(token.Payload)
+	// 2. Encode the body
+	encodedBody, err := base64Encode(body)
 	if err != nil {
-		return err
+		return "", err
 	}
-	// 3. Build <encoded header>.<encoded payload>
-	var bufferHeaderPayload bytes.Buffer
-	bufferHeaderPayload.WriteString(encodedHeader)
-	bufferHeaderPayload.WriteString(".")
-	bufferHeaderPayload.WriteString(encodedPayload)
-	encodedHeaderPayload := bufferHeaderPayload.String()
-	// 4. Build <hashed(<encoded header>.<encoded payload>)>
-	encodedSignature := hashSignature(token.Header.Alg, encodedHeaderPayload, secret)
+	// 3. Build <encoded header>.<encoded body>
+	// 4. Build <hashed(<encoded header>.<encoded body>)>
+	// 5. Build Token Signature = <encoded header>.<encoded body>.<hashed(<encoded header>.<encoded body>)>
+	return buildTokenSignature(encodedHeader, encodedBody, header.Alg, secret), nil
+}
 
-	// 5. Build Token Signature = <encoded header>.<encoded payload>.<hashed(<encoded header>.<encoded payload>)>
+// buildTokenSignature builds the token signature using the encoded header, body, selected algorithm, and secret key.
+// Returns the token string.
+func buildTokenSignature(encodedHeader string, encodedBody string, alg pb.Algorithm, secret *pb.Secret) string {
+	// 3. Build <encoded header>.<encoded body>
+	var bufferHeaderBody bytes.Buffer
+	bufferHeaderBody.WriteString(encodedHeader)
+	bufferHeaderBody.WriteString(".")
+	bufferHeaderBody.WriteString(encodedBody)
+	encodedHeaderBody := bufferHeaderBody.String()
+	// 4. Build <hashed(<encoded header>.<encoded body>)>
+	encodedSignature := hashSignature(alg, encodedHeaderBody, secret)
+
+	// 5. Build Token Signature = <encoded header>.<encoded body>.<hashed(<encoded header>.<encoded body>)>
 	var bufferTokenSignature bytes.Buffer
-	bufferTokenSignature.WriteString(encodedHeaderPayload)
+	bufferTokenSignature.WriteString(encodedHeaderBody)
 	bufferTokenSignature.WriteString(".")
 	bufferTokenSignature.WriteString(encodedSignature)
-	token.Signature = bufferTokenSignature.String()
 
-	return nil
+	return bufferTokenSignature.String()
 }
 
-// base64Encode takes in a string.
-// Returns a base 64 encoded string
+// base64Encode takes in a interface and encodes it as a string.
+// Returns a base 64 encoded string.
 func base64Encode(src interface{}) (string, error) {
 	// TODO maybe use Trim
 	srcMarshal, err := json.Marshal(src)
@@ -198,7 +205,7 @@ func hashSignature(alg pb.Algorithm, signatureValue string, secret *pb.Secret) s
 func isValidHash(alg pb.Algorithm, signatureValue string, secret *pb.Secret, hashedValue string) bool {
 	/*
 		NB: hashSignature cannot be reversed all you can do is hash the same character and compare it with a hashed value. If it evaluates to true, then the character is a what is in the hash.
-		The isValidHash function only hashes the value with the secret and comared it with the hash
+		The isValidHash function only hashes the value with the secret and compared it with the hash
 		Above we created two methods, One for generating an HS256 hash and the other for validating a string against a hash.
 	*/
 	return hashedValue == hashSignature(alg, signatureValue, secret)
