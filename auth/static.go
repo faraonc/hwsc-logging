@@ -192,9 +192,9 @@ func hashSignature(alg Algorithm, signatureValue string, secret *pb.Secret) (str
 // isValidHash validates a hash against a value
 func isValidHash(alg Algorithm, signatureValue string, secret *pb.Secret, hashedValue string) bool {
 	/*
-		NB: hashSignature cannot be reversed all you can do is hash the same character and compare it with a hashed value. If it evaluates to true, then the character is a what is in the hash.
-		The isValidHash function only hashes the value with the secret and compared it with the hash
-		Above we created two methods, One for generating an HS256 hash and the other for validating a string against a hash.
+		hashSignature cannot be reversed all you can do is hash the same character and compare it with a hashed value.
+		If it evaluates to true, then the character is a what is in the hash.
+		The isValidHash function only hashes the value with the secret and compared it with the hash.
 	*/
 	actualHashedValue, err := hashSignature(alg, signatureValue, secret)
 	if err != nil {
