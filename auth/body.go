@@ -6,6 +6,8 @@ type Permission int32
 const (
 	// NoPermission user is not allowed to use the service
 	NoPermission Permission = iota
+	// UserRegistration user is not allowed to use the service
+	UserRegistration
 	// User is only allowed to use services based on the ownership
 	User
 	// Admin is allowed to perform CRUD on everything
