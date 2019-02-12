@@ -2,7 +2,7 @@ package auth
 
 import (
 	"fmt"
-	pb "github.com/hwsc-org/hwsc-api-blocks/int/hwsc-app-gateway-svc/proto"
+// 	pb "github.com/hwsc-org/hwsc-api-blocks/int/hwsc-app-gateway-svc/proto"
 )
 
 // Authorize the given Token using a Secret
