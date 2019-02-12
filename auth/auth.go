@@ -6,9 +6,9 @@ import (
 )
 
 // Authorize the given Token using a Secret
-func Authorize(token *pb.Token) {
-	fmt.Println("Authorize")
-}
+// func Authorize(token *pb.Token) {
+// 	fmt.Println("Authorize")
+// }
 
 // Invalidate the Token
 func Invalidate() {
