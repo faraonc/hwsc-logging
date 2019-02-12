@@ -17,17 +17,18 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2bd24f5e7b3f6a5cd807e2fce1363b0bb9b32b3700b4db327b938c8501328e4c"
+  digest = "1:5dd68549edb4591e69fbe96dfe84d4b75726a08971c480ba29496619339113fb"
   name = "github.com/hwsc-org/hwsc-api-blocks"
   packages = ["int/hwsc-app-gateway-svc/proto"]
   pruneopts = "UT"
-  revision = "e9606e72c6f72e79c8b1ab3ed136b4e6cf95cb81"
+  revision = "547722ba9edbb917fdfe7b3af4c72bf191ef06c2"
 
 [[projects]]
   branch = "master"
-  digest = "1:cd17bc5dbd6ff6bd147dcd4712d423c1808f529c77c879c34df6b20b7501562b"
+  digest = "1:fc7b6b4384e1e849d99eab58eca4f8c0a76bad4699117d5077a9a5c3c83e289e"
   name = "golang.org/x/net"
   packages = [
+    "context",
     "http/httpguts",
     "http2",
     "http2/hpack",
