@@ -2,7 +2,7 @@ package auth
 
 import (
 	"encoding/json"
-	pb "github.com/hwsc-org/hwsc-api-blocks/int/hwsc-app-gateway-svc/proto"
+	pb "github.com/hwsc-org/hwsc-api-blocks/lib"
 	"github.com/hwsc-org/hwsc-lib/consts"
 	"strings"
 	"time"
