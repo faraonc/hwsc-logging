@@ -186,7 +186,7 @@ func hashSignature(alg Algorithm, signatureValue string, secret *pb.Secret) (str
 		h = hmac.New(sha256.New, key)
 	}
 	h.Write([]byte(signatureValue))
-	return base64.StdEncoding.EncodeToString(h.Sum(nil)), nil
+	return base64.URLEncoding.EncodeToString(h.Sum(nil)), nil
 }
 
 // isValidHash validates a hash against a value
