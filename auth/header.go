@@ -4,8 +4,8 @@ package auth
 type Algorithm int32
 
 const (
-	// NoALg default zero value
-	NoALg Algorithm = iota
+	// NoAlg default zero value
+	NoAlg Algorithm = iota
 	// Hs256 use SHA256
 	Hs256
 	// Hs512 use SHA512 for admin level permission
@@ -16,8 +16,8 @@ const (
 type TokenType int32
 
 const (
-	// NoTpe default zero value
-	NoTpe TokenType = iota
+	// NoType default zero value
+	NoType TokenType = iota
 	// Jwt JSON Web Token
 	Jwt
 )
