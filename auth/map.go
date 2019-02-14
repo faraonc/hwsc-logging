@@ -5,6 +5,7 @@ const (
 	strUserRegistration = "USER_REGISTRATION"
 	strUser             = "USER"
 	strAdmin            = "ADMIN"
+	secretByteSize		= 32
 )
 
 var (
@@ -30,11 +31,5 @@ var (
 		UserRegistration: Hs256,
 		User:             Hs256,
 		Admin:            Hs512,
-	}
-
-	// SignatureBytesMap maps algorithm to number of bytes needed for token size
-	SignatureBytesMap = map[Algorithm]int{
-		Hs256: 32,
-		Hs512: 64,
 	}
 )
