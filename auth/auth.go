@@ -2,7 +2,7 @@ package auth
 
 import (
 	"encoding/json"
-	pb "github.com/hwsc-org/hwsc-api-blocks/lib"
+	pbauth "github.com/hwsc-org/hwsc-api-blocks/lib"
 	"github.com/hwsc-org/hwsc-lib/consts"
 	"strings"
 	"time"
@@ -10,7 +10,7 @@ import (
 
 // Authority ensures the identification is authorized.
 type Authority struct {
-	id                 *pb.Identification
+	id                 *pbauth.Identification
 	header             *Header
 	body               *Body
 	permissionRequired Permission
@@ -18,7 +18,7 @@ type Authority struct {
 
 // Authorize the identification and generates the body.
 // Returns an error if not authorized
-func (a *Authority) Authorize(id *pb.Identification, permissionRequired Permission) error {
+func (a *Authority) Authorize(id *pbauth.Identification, permissionRequired Permission) error {
 	if err := validateIdentification(id); err != nil {
 		return err
 	}

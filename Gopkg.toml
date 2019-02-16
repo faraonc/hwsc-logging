@@ -25,10 +25,10 @@
 #   unused-packages = true
 
 
-[prune]
-  go-tests = true
-  unused-packages = true
-
 [[constraint]]
   branch = "master"
   name = "github.com/hwsc-org/hwsc-api-blocks"
+
+[prune]
+  go-tests = true
+  unused-packages = true

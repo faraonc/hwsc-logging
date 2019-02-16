@@ -8,14 +8,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	pb "github.com/hwsc-org/hwsc-api-blocks/lib"
+	pbauth "github.com/hwsc-org/hwsc-api-blocks/lib"
 	"github.com/hwsc-org/hwsc-lib/consts"
 	"hash"
 	"strings"
 	"time"
 )
 
-func validateIdentification(id *pb.Identification) error {
+func validateIdentification(id *pbauth.Identification) error {
 	if id == nil {
 		return consts.ErrNilIdentification
 	}
@@ -46,7 +46,7 @@ func validateBody(body *Body) error {
 	return nil
 }
 
-func validateSecret(secret *pb.Secret) error {
+func validateSecret(secret *pbauth.Secret) error {
 	if secret == nil {
 		return consts.ErrNilSecret
 	}
@@ -62,7 +62,7 @@ func validateSecret(secret *pb.Secret) error {
 
 // NewToken generates token string using a header, body, and secret.
 // Return error if an error exists during signing.
-func NewToken(header *Header, body *Body, secret *pb.Secret) (string, error) {
+func NewToken(header *Header, body *Body, secret *pbauth.Secret) (string, error) {
 	if err := validateHeader(header); err != nil {
 		return "", err
 	}
@@ -83,7 +83,7 @@ func NewToken(header *Header, body *Body, secret *pb.Secret) (string, error) {
 
 // getTokenSignature gets the token signature using the encoded header, body, and secret key.
 // Return error if an error exists during signing.
-func getTokenSignature(header *Header, body *Body, secret *pb.Secret) (string, error) {
+func getTokenSignature(header *Header, body *Body, secret *pbauth.Secret) (string, error) {
 	if err := validateHeader(header); err != nil {
 		return "", err
 	}
@@ -112,7 +112,7 @@ func getTokenSignature(header *Header, body *Body, secret *pb.Secret) (string, e
 
 // buildTokenSignature builds the token signature using the encoded header, body, selected algorithm, and secret key.
 // Return error if an error exists during signing.
-func buildTokenSignature(encodedHeader string, encodedBody string, alg Algorithm, secret *pb.Secret) (string, error) {
+func buildTokenSignature(encodedHeader string, encodedBody string, alg Algorithm, secret *pbauth.Secret) (string, error) {
 	if strings.TrimSpace(encodedHeader) == "" {
 		return "", consts.ErrInvalidEncodedHeader
 	}
@@ -168,7 +168,7 @@ func base64Decode(src string) (string, error) {
 }
 
 // hashSignature generates a HMAC hash of a string using a secret
-func hashSignature(alg Algorithm, signatureValue string, secret *pb.Secret) (string, error) {
+func hashSignature(alg Algorithm, signatureValue string, secret *pbauth.Secret) (string, error) {
 	if strings.TrimSpace(signatureValue) == "" {
 		return "", consts.ErrInvalidSignatureValue
 	}
@@ -190,7 +190,7 @@ func hashSignature(alg Algorithm, signatureValue string, secret *pb.Secret) (str
 }
 
 // isValidHash validates a hash against a value
-func isValidHash(alg Algorithm, signatureValue string, secret *pb.Secret, hashedValue string) bool {
+func isValidHash(alg Algorithm, signatureValue string, secret *pbauth.Secret, hashedValue string) bool {
 	/*
 		hashSignature cannot be reversed all you can do is hash the same character and compare it with a hashed value.
 		If it evaluates to true, then the character is a what is in the hash.

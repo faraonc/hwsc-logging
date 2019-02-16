@@ -5,7 +5,7 @@ const (
 	strUserRegistration = "USER_REGISTRATION"
 	strUser             = "USER"
 	strAdmin            = "ADMIN"
-	SecretByteSize		= 32
+	SecretByteSize      = 32
 )
 
 var (

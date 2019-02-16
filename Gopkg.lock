@@ -11,11 +11,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:984ad477d84221acf5aef3e7cbb837afa957386b8c5edf84460ec4adb9935e7f"
+  digest = "1:00e652c657d023daa11b76b3d7e735bd9dec92cf470d3cb83dcc92d3c92a117f"
   name = "github.com/hwsc-org/hwsc-api-blocks"
   packages = ["lib"]
   pruneopts = "UT"
-  revision = "58054f93b29d5c362a568b8804f21d798f455c20"
+  revision = "5fce68a4dfda026b8b0319d2c10bf332c135f029"
 
 [solve-meta]
   analyzer-name = "dep"
