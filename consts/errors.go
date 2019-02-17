@@ -3,6 +3,8 @@ package consts
 import "errors"
 
 var (
+	ErrNilInterface                 = errors.New("nil interface")
+	ErrEmptyString                  = errors.New("empty string")
 	ErrNilIdentification            = errors.New("nil identification")
 	ErrNilHeader                    = errors.New("nil header")
 	ErrNilBody                      = errors.New("nil body")

@@ -149,6 +149,9 @@ func buildTokenSignature(encodedHeader string, encodedBody string, alg Algorithm
 // base64Encode takes in a interface and encodes it as a string.
 // Returns a base 64 encoded string or error during marshalling.
 func base64Encode(src interface{}) (string, error) {
+	if src == nil {
+		return "", consts.ErrNilInterface
+	}
 	srcMarshal, err := json.Marshal(src)
 	if err != nil {
 		return "", err
@@ -161,6 +164,9 @@ func base64Encode(src interface{}) (string, error) {
 // base64Encode takes in a base 64 encoded string.
 // Returns the actual string or an error of it fails to decode the string.
 func base64Decode(src string) (string, error) {
+	if strings.TrimSpace(src) == "" {
+		return "", consts.ErrEmptyString
+	}
 	if l := len(src) % 4; l > 0 {
 		src += strings.Repeat("=", 4-l)
 	}
