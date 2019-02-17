@@ -43,6 +43,7 @@ func validateBody(body *Body) error {
 	if strings.TrimSpace(body.UUID) == "" {
 		return consts.ErrInvalidUUID
 	}
+	// Expiration timestamp is not verified
 	return nil
 }
 

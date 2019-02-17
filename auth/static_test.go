@@ -63,3 +63,42 @@ func TestValidateIdentification(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateHeader(t *testing.T) {
+	cases := []struct {
+		input    *Header
+		isExpErr bool
+		expErr   error
+	}{
+		{nil, true, consts.ErrNilHeader},
+		{&Header{}, false, nil},
+	}
+	for _, c := range cases {
+		err := validateHeader(c.input)
+		if c.isExpErr {
+			assert.EqualError(t, err, c.expErr.Error())
+		} else {
+			assert.Nil(t, err)
+		}
+	}
+}
+
+func TestValidateBody(t *testing.T) {
+	cases := []struct {
+		input    *Body
+		isExpErr bool
+		expErr   error
+	}{
+		{nil, true, consts.ErrNilBody},
+		{&Body{}, true, consts.ErrInvalidUUID},
+		{&Body{UUID: "0000xsnjg0mqjhbf4qx"}, false, nil},
+	}
+	for _, c := range cases {
+		err := validateBody(c.input)
+		if c.isExpErr {
+			assert.EqualError(t, err, c.expErr.Error())
+		} else {
+			assert.Nil(t, err)
+		}
+	}
+}
