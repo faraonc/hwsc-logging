@@ -200,14 +200,17 @@ func hashSignature(alg Algorithm, signatureValue string, secret *pbauth.Secret) 
 	case Hs512:
 		h = hmac.New(sha512.New, key)
 	default:
-		h = hmac.New(sha256.New, key)
+		return "", consts.ErrNoHashAlgorithm
 	}
 	h.Write([]byte(signatureValue))
 	return base64.URLEncoding.EncodeToString(h.Sum(nil)), nil
 }
 
-// isValidHash validates a hash against a value
-func isValidHash(alg Algorithm, signatureValue string, secret *pbauth.Secret, hashedValue string) bool {
+// isEquivalentHash validates a hash against a value
+func isEquivalentHash(alg Algorithm, signatureValue string, secret *pbauth.Secret, hashedValue string) bool {
+	if err := validateSecret(secret); err != nil {
+		return false
+	}
 	/*
 		hashSignature cannot be reversed all you can do is hash the same character and compare it with a hashed value.
 		If it evaluates to true, then the character is a what is in the hash.

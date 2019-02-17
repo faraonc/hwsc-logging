@@ -22,4 +22,5 @@ var (
 	ErrInvalidEncodedHeader         = errors.New("invalid encoded header")
 	ErrInvalidEncodedBody           = errors.New("invalid encoded body")
 	ErrInvalidSignatureValue        = errors.New("invalid signature value")
+	ErrNoHashAlgorithm              = errors.New("no hashing algorithm")
 )

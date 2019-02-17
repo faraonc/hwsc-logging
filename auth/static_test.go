@@ -17,12 +17,18 @@ const (
 var (
 	validCreatedTimestamp    = time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC).Unix()
 	validExpirationTimestamp = time.Unix(validCreatedTimestamp, 0).AddDate(30, 0, 0).UTC().Unix()
-	// validHeader and encodedHeader are dependent to each other
-	validHeader = &Header{
+	// valid256 and encoded256Header are dependent to each other
+	valid256 = &Header{
+		Alg:      Hs256,
+		TokenTyp: Jwt,
+	}
+	encoded256Header = "eyJBbGciOjEsIlRva2VuVHlwIjoxfQ"
+	// valid512 and encoded512Header are dependent to each other
+	valid512 = &Header{
 		Alg:      Hs512,
 		TokenTyp: Jwt,
 	}
-	encodedHeader = "eyJBbGciOjIsIlRva2VuVHlwIjoxfQ"
+	encoded512Header = "eyJBbGciOjIsIlRva2VuVHlwIjoxfQ"
 	// validBody and encodedBody are dependent to each other
 	validBody = &Body{
 		UUID:                "01d3x3wm2nnrdfzp0tka2vw9dx",
@@ -35,7 +41,12 @@ var (
 		CreatedTimestamp:    validCreatedTimestamp,
 		ExpirationTimestamp: validExpirationTimestamp,
 	}
-	validTokenString = "eyJBbGciOjIsIlRva2VuVHlwIjoxfQ.eyJVVUlEIjoiMDFkM3gzd20ybm5yZGZ6cDB0a2Eydnc5ZHgiLCJQZXJtaXNzaW9uIjozLCJFeHBpcmF0aW9uVGltZXN0YW1wIjoxODkzNDU2MDAwfQ.8lVhZo_W6KmGI2oi5JNHioDvPq2Yl86v4uae3RfKc-qoKUwHNxFtXO2NFmChsi35__t1uC_SD-Ay_MoateeDNg=="
+	valid256TokenString = "eyJBbGciOjEsIlRva2VuVHlwIjoxfQ.eyJVVUlEIjoiMDFkM3gzd20ybm5yZGZ6cDB0a2Eydnc5ZHgiLCJQZXJtaXNzaW9uIjozLCJFeHBpcmF0aW9uVGltZXN0YW1wIjoxODkzNDU2MDAwfQ.xtOMEMbgD9YH0SDVChgSy6vykf9z-9eD0_pCK--uwQQ="
+	valid256Signature   = "eyJBbGciOjEsIlRva2VuVHlwIjoxfQ.eyJVVUlEIjoiMDFkM3gzd20ybm5yZGZ6cDB0a2Eydnc5ZHgiLCJQZXJtaXNzaW9uIjozLCJFeHBpcmF0aW9uVGltZXN0YW1wIjoxODkzNDU2MDAwfQ"
+	valid256HAS         = "xtOMEMbgD9YH0SDVChgSy6vykf9z-9eD0_pCK--uwQQ="
+	valid512TokenString = "eyJBbGciOjIsIlRva2VuVHlwIjoxfQ.eyJVVUlEIjoiMDFkM3gzd20ybm5yZGZ6cDB0a2Eydnc5ZHgiLCJQZXJtaXNzaW9uIjozLCJFeHBpcmF0aW9uVGltZXN0YW1wIjoxODkzNDU2MDAwfQ.8lVhZo_W6KmGI2oi5JNHioDvPq2Yl86v4uae3RfKc-qoKUwHNxFtXO2NFmChsi35__t1uC_SD-Ay_MoateeDNg=="
+	valid512Signature   = "eyJBbGciOjIsIlRva2VuVHlwIjoxfQ.eyJVVUlEIjoiMDFkM3gzd20ybm5yZGZ6cDB0a2Eydnc5ZHgiLCJQZXJtaXNzaW9uIjozLCJFeHBpcmF0aW9uVGltZXN0YW1wIjoxODkzNDU2MDAwfQ"
+	valid512HAS         = "8lVhZo_W6KmGI2oi5JNHioDvPq2Yl86v4uae3RfKc-qoKUwHNxFtXO2NFmChsi35__t1uC_SD-Ay_MoateeDNg=="
 )
 
 func TestValidateIdentification(t *testing.T) {
@@ -102,7 +113,8 @@ func TestValidateHeader(t *testing.T) {
 		expErr   error
 	}{
 		{nil, true, consts.ErrNilHeader},
-		{validHeader, false, nil},
+		{valid256, false, nil},
+		{valid512, false, nil},
 	}
 	for _, c := range cases {
 		err := validateHeader(c.input)
@@ -156,7 +168,7 @@ func TestValidateSecret(t *testing.T) {
 		{
 			&pbauth.Secret{
 				Key:              "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
-				CreatedTimestamp: time.Now().UTC().Unix() + 1,
+				CreatedTimestamp: time.Now().UTC().Unix() + 60,
 			}, true, consts.ErrInvalidSecretCreateTimestamp,
 		},
 		{validSecret, false, nil},
@@ -177,7 +189,7 @@ func TestIsExpired(t *testing.T) {
 		expOutput bool
 	}{
 		{0, true},
-		{time.Now().UTC().Unix() - 60, false},
+		{time.Now().UTC().Unix() - 60, true},
 		{time.Now().UTC().Unix() + 60, false},
 	}
 	for _, c := range cases {
@@ -188,38 +200,41 @@ func TestIsExpired(t *testing.T) {
 
 func TestNewToken(t *testing.T) {
 	cases := []struct {
-		header   *Header
-		body     *Body
-		secret   *pbauth.Secret
-		isExpErr bool
-		expErr   error
+		header    *Header
+		body      *Body
+		secret    *pbauth.Secret
+		isExpErr  bool
+		expErr    error
+		expOutput string
 	}{
-		{nil, nil, nil, true, consts.ErrNilHeader},
-		{validHeader, nil, nil, true, consts.ErrNilBody},
-		{validHeader, &Body{}, nil, true, consts.ErrInvalidUUID},
-		{validHeader, &Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"}, nil, true, consts.ErrExpiredBody},
-		{validHeader, validBody, nil, true, consts.ErrNilSecret},
-		{validHeader, validBody,
+		{nil, nil, nil, true, consts.ErrNilHeader, ""},
+		{valid256, nil, nil, true, consts.ErrNilBody, ""},
+		{valid512, nil, nil, true, consts.ErrNilBody, ""},
+		{valid512, &Body{}, nil, true, consts.ErrInvalidUUID, ""},
+		{valid512, &Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"}, nil, true, consts.ErrExpiredBody, ""},
+		{valid512, validBody, nil, true, consts.ErrNilSecret, ""},
+		{valid512, validBody,
 			&pbauth.Secret{
 				Key: "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
 			},
-			true, consts.ErrInvalidSecretCreateTimestamp,
+			true, consts.ErrInvalidSecretCreateTimestamp, "",
 		},
-		{validHeader, validBody,
+		{valid512, validBody,
 			&pbauth.Secret{
 				Key:              "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
 				CreatedTimestamp: time.Now().UTC().Unix() + 1,
 			},
-			true, consts.ErrInvalidSecretCreateTimestamp,
+			true, consts.ErrInvalidSecretCreateTimestamp, "",
 		},
-		{validHeader, validBody,
+		{valid512, validBody,
 			&pbauth.Secret{
 				Key:              "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
 				CreatedTimestamp: validCreatedTimestamp,
 			},
-			true, consts.ErrExpiredSecret,
+			true, consts.ErrExpiredSecret, "",
 		},
-		{validHeader, validBody, validSecret, false, nil},
+		{valid512, validBody, validSecret, false, nil, valid512TokenString},
+		{valid256, validBody, validSecret, false, nil, valid256TokenString},
 	}
 	for _, c := range cases {
 		output, err := NewToken(c.header, c.body, c.secret)
@@ -227,49 +242,52 @@ func TestNewToken(t *testing.T) {
 			assert.EqualError(t, err, c.expErr.Error())
 		} else {
 			assert.Nil(t, err)
-			assert.NotEqual(t, "", output)
+			assert.Equal(t, c.expOutput, output)
 		}
 	}
 }
 
 func TestGetTokenSignature(t *testing.T) {
 	cases := []struct {
-		header   *Header
-		body     *Body
-		secret   *pbauth.Secret
-		isExpErr bool
-		expErr   error
+		header    *Header
+		body      *Body
+		secret    *pbauth.Secret
+		isExpErr  bool
+		expErr    error
+		expOutput string
 	}{
-		{nil, nil, nil, true, consts.ErrNilHeader},
-		{validHeader, nil, nil, true, consts.ErrNilBody},
-		{validHeader, &Body{}, nil, true, consts.ErrInvalidUUID},
+		{nil, nil, nil, true, consts.ErrNilHeader, ""},
+		{valid256, nil, nil, true, consts.ErrNilBody, ""},
+		{valid512, nil, nil, true, consts.ErrNilBody, ""},
+		{valid512, &Body{}, nil, true, consts.ErrInvalidUUID, ""},
 		{
-			validHeader,
+			valid512,
 			&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"},
-			nil, true, consts.ErrExpiredBody,
+			nil, true, consts.ErrExpiredBody, "",
 		},
-		{validHeader, validBody, nil, true, consts.ErrNilSecret},
-		{validHeader, validBody,
+		{valid512, validBody, nil, true, consts.ErrNilSecret, ""},
+		{valid512, validBody,
 			&pbauth.Secret{
 				Key: "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
 			},
-			true, consts.ErrInvalidSecretCreateTimestamp,
+			true, consts.ErrInvalidSecretCreateTimestamp, ",",
 		},
-		{validHeader, validBody,
+		{valid512, validBody,
 			&pbauth.Secret{
 				Key:              "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
 				CreatedTimestamp: time.Now().UTC().Unix() + 1,
 			},
-			true, consts.ErrInvalidSecretCreateTimestamp,
+			true, consts.ErrInvalidSecretCreateTimestamp, "",
 		},
-		{validHeader, validBody,
+		{valid512, validBody,
 			&pbauth.Secret{
 				Key:              "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
 				CreatedTimestamp: validCreatedTimestamp,
 			},
-			true, consts.ErrExpiredSecret,
+			true, consts.ErrExpiredSecret, "",
 		},
-		{validHeader, validBody, validSecret, false, nil},
+		{valid512, validBody, validSecret, false, nil, valid512TokenString},
+		{valid256, validBody, validSecret, false, nil, valid256TokenString},
 	}
 	for _, c := range cases {
 		output, err := getTokenSignature(c.header, c.body, c.secret)
@@ -277,7 +295,34 @@ func TestGetTokenSignature(t *testing.T) {
 			assert.EqualError(t, err, c.expErr.Error())
 		} else {
 			assert.Nil(t, err)
-			assert.NotEqual(t, "", output)
+			assert.Equal(t, c.expOutput, output)
+		}
+	}
+}
+
+func TestBuildTokenSignature(t *testing.T) {
+	cases := []struct {
+		header    string
+		body      string
+		alg       Algorithm
+		secret    *pbauth.Secret
+		isExpErr  bool
+		expErr    error
+		expOutput string
+	}{
+		{"", "", NoAlg, nil, true, consts.ErrInvalidEncodedHeader, ""},
+		{encoded256Header, "", NoAlg, nil, true, consts.ErrInvalidEncodedBody, ""},
+		{encoded512Header, "", NoAlg, nil, true, consts.ErrInvalidEncodedBody, ""},
+		{encoded256Header, encodedBody, NoAlg, nil, true, consts.ErrNilSecret, ""},
+		{encoded256Header, encodedBody, Hs256, validSecret, false, consts.ErrNilSecret, valid256TokenString},
+		{encoded512Header, encodedBody, Hs512, validSecret, false, consts.ErrNilSecret, valid512TokenString},
+	}
+	for _, c := range cases {
+		actOutput, err := buildTokenSignature(c.header, c.body, c.alg, c.secret)
+		if c.isExpErr {
+			assert.EqualError(t, err, c.expErr.Error())
+		} else {
+			assert.Equal(t, c.expOutput, actOutput)
 		}
 	}
 }
@@ -290,7 +335,8 @@ func TestBase64Encode(t *testing.T) {
 		expOutput string
 	}{
 		{nil, true, consts.ErrNilInterface, ""},
-		{validHeader, false, nil, encodedHeader},
+		{valid256, false, nil, encoded256Header},
+		{valid512, false, nil, encoded512Header},
 		{validBody, false, nil, encodedBody},
 	}
 	for _, c := range cases {
@@ -313,7 +359,8 @@ func TestBase64Decode(t *testing.T) {
 		structType int
 	}{
 		{"", true, consts.ErrEmptyString, nil, 0},
-		{encodedHeader, false, nil, validHeader, 0},
+		{encoded256Header, false, nil, valid256, 0},
+		{encoded512Header, false, nil, valid512, 0},
 		{encodedBody, false, nil, validBody, 1},
 	}
 	for _, c := range cases {
@@ -335,5 +382,53 @@ func TestBase64Decode(t *testing.T) {
 				assert.Equal(t, o, c.expOutput)
 			}
 		}
+	}
+}
+
+func TestHashSignature(t *testing.T) {
+	cases := []struct {
+		alg            Algorithm
+		signatureValue string
+		secret         *pbauth.Secret
+		isExpErr       bool
+		expErr         error
+		expOutput      string
+	}{
+		{NoAlg, "", nil, true, consts.ErrInvalidSignatureValue, ""},
+		{Hs256, valid256Signature, nil, true, consts.ErrNilSecret, ""},
+		{Hs512, valid512Signature, nil, true, consts.ErrNilSecret, ""},
+		{NoAlg, valid256Signature, validSecret, true, consts.ErrNoHashAlgorithm, valid256HAS},
+		{Hs256, valid256Signature, validSecret, false, nil, valid256HAS},
+		{Hs512, valid512Signature, validSecret, false, nil, valid512HAS},
+	}
+	for _, c := range cases {
+		actOuput, err := hashSignature(c.alg, c.signatureValue, c.secret)
+		if c.isExpErr {
+			assert.EqualError(t, err, c.expErr.Error())
+		} else {
+			assert.Nil(t, err)
+			assert.Equal(t, c.expOutput, actOuput)
+		}
+	}
+}
+
+func TestIsEquivalentHash(t *testing.T) {
+	cases := []struct {
+		alg            Algorithm
+		signatureValue string
+		secret         *pbauth.Secret
+		hashedValue    string
+		expOutput      bool
+	}{
+		{Hs256, valid256Signature, nil, "", false},
+		{Hs512, valid512Signature, nil, "", false},
+		{Hs256, valid256Signature, validSecret, valid512HAS, false},
+		{Hs512, valid512Signature, validSecret, valid256HAS, false},
+		{Hs256, valid256Signature, validSecret, valid256HAS, true},
+		{Hs512, valid512Signature, validSecret, valid512HAS, true},
+	}
+	for _, c := range cases {
+		actOuput := isEquivalentHash(c.alg, c.signatureValue, c.secret, c.hashedValue)
+		assert.Equal(t, c.expOutput, actOuput)
 	}
 }
