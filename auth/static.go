@@ -10,6 +10,7 @@ import (
 	"fmt"
 	pbauth "github.com/hwsc-org/hwsc-api-blocks/lib"
 	"github.com/hwsc-org/hwsc-lib/consts"
+	"github.com/hwsc-org/hwsc-lib/validation"
 	"hash"
 	"strings"
 	"time"
@@ -39,9 +40,8 @@ func validateBody(body *Body) error {
 	if body == nil {
 		return consts.ErrNilBody
 	}
-	// TODO user user-svc validation
-	if strings.TrimSpace(body.UUID) == "" {
-		return consts.ErrInvalidUUID
+	if err := validation.ValidateUserUUID(body.UUID); err != nil {
+		return err
 	}
 	// Expiration timestamp is not verified
 	return nil

@@ -26,6 +26,14 @@
   revision = "5fce68a4dfda026b8b0319d2c10bf332c135f029"
 
 [[projects]]
+  digest = "1:4f5513cb656b73fb4c4f77ccd482c8366d6290278564d2b1d3285f45e45f4a1e"
+  name = "github.com/oklog/ulid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "02a8604050d8466dd915307496174adb9be4593a"
+  version = "v1.3.1"
+
+[[projects]]
   digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
@@ -46,6 +54,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/hwsc-org/hwsc-api-blocks/lib",
+    "github.com/oklog/ulid",
     "github.com/stretchr/testify/assert",
   ]
   solver-name = "gps-cdcl"

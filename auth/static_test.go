@@ -38,6 +38,15 @@ func TestValidateIdentification(t *testing.T) {
 				Token: "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ1dWlkIjoiMTIzNDU2Nzg5MCIsInBlcm1pc3Npb24iOiJUb2tlbi5BRE1JTiIsImV4cGlyYXRpb25fdGltZSI6MTU0OTA5MzkxMH0.OZFQ_zU1F2BJm6kyYzsBns5qmOxbVbUnQV2SU1B_kyPfXPOmUd0fddRvF0I3IqaDz-55H7Q80w8zQyldMQ7AAg",
 				Secret: &pbauth.Secret{
 					Key:              "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
+					CreatedTimestamp: time.Now().UTC().Unix() + 1,
+				},
+			}, true, consts.ErrInvalidSecretCreateTimestamp,
+		},
+		{
+			&pbauth.Identification{
+				Token: "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ1dWlkIjoiMTIzNDU2Nzg5MCIsInBlcm1pc3Npb24iOiJUb2tlbi5BRE1JTiIsImV4cGlyYXRpb25fdGltZSI6MTU0OTA5MzkxMH0.OZFQ_zU1F2BJm6kyYzsBns5qmOxbVbUnQV2SU1B_kyPfXPOmUd0fddRvF0I3IqaDz-55H7Q80w8zQyldMQ7AAg",
+				Secret: &pbauth.Secret{
+					Key:              "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
 					CreatedTimestamp: validCreatedTimestamp,
 				},
 			}, true, consts.ErrExpiredSecret,
@@ -91,10 +100,52 @@ func TestValidateBody(t *testing.T) {
 	}{
 		{nil, true, consts.ErrNilBody},
 		{&Body{}, true, consts.ErrInvalidUUID},
-		{&Body{UUID: "0000xsnjg0mqjhbf4qx"}, false, nil},
+		{&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"}, false, nil},
 	}
 	for _, c := range cases {
 		err := validateBody(c.input)
+		if c.isExpErr {
+			assert.EqualError(t, err, c.expErr.Error())
+		} else {
+			assert.Nil(t, err)
+		}
+	}
+}
+
+func TestValidateSecret(t *testing.T) {
+	cases := []struct {
+		input    *pbauth.Secret
+		isExpErr bool
+		expErr   error
+	}{
+		{nil, true, consts.ErrNilSecret},
+		{
+			&pbauth.Secret{
+				Key: "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
+			}, true, consts.ErrInvalidSecretCreateTimestamp,
+		},
+		{
+			&pbauth.Secret{
+				Key:              "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
+				CreatedTimestamp: validCreatedTimestamp,
+			}, true, consts.ErrExpiredSecret,
+		},
+		{
+			&pbauth.Secret{
+				Key:              "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
+				CreatedTimestamp: time.Now().UTC().Unix() + 1,
+			}, true, consts.ErrInvalidSecretCreateTimestamp,
+		},
+		{
+			&pbauth.Secret{
+				Key:                 "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
+				CreatedTimestamp:    validCreatedTimestamp,
+				ExpirationTimestamp: time.Unix(validCreatedTimestamp, 0).AddDate(0, 0, 7).UTC().Unix(),
+			}, false, nil,
+		},
+	}
+	for _, c := range cases {
+		err := validateSecret(c.input)
 		if c.isExpErr {
 			assert.EqualError(t, err, c.expErr.Error())
 		} else {
