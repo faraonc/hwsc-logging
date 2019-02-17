@@ -11,15 +11,26 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:984ad477d84221acf5aef3e7cbb837afa957386b8c5edf84460ec4adb9935e7f"
+  digest = "1:00e652c657d023daa11b76b3d7e735bd9dec92cf470d3cb83dcc92d3c92a117f"
   name = "github.com/hwsc-org/hwsc-api-blocks"
   packages = ["lib"]
   pruneopts = "UT"
-  revision = "58054f93b29d5c362a568b8804f21d798f455c20"
+  revision = "1729749fa868a1152434fea9bede5c9fb2a50835"
+
+[[projects]]
+  digest = "1:4f5513cb656b73fb4c4f77ccd482c8366d6290278564d2b1d3285f45e45f4a1e"
+  name = "github.com/oklog/ulid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "02a8604050d8466dd915307496174adb9be4593a"
+  version = "v1.3.1"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  input-imports = ["github.com/hwsc-org/hwsc-api-blocks/lib"]
+  input-imports = [
+    "github.com/hwsc-org/hwsc-api-blocks/lib",
+    "github.com/oklog/ulid",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
