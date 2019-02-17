@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"fmt"
 	pbauth "github.com/hwsc-org/hwsc-api-blocks/lib"
 	"github.com/hwsc-org/hwsc-lib/consts"
 	"github.com/stretchr/testify/assert"
@@ -10,7 +9,8 @@ import (
 )
 
 var (
-	validCreatedTimestamp = time.Now().UTC().Unix() - 60 // seconds
+	validCreatedTimestamp    = time.Now().UTC().Unix() - 60 // seconds
+	validExpirationTimestamp = time.Unix(validCreatedTimestamp, 0).AddDate(0, 0, 7).UTC().Unix()
 )
 
 func TestValidateIdentification(t *testing.T) {
@@ -58,7 +58,7 @@ func TestValidateIdentification(t *testing.T) {
 				Secret: &pbauth.Secret{
 					Key:                 "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
 					CreatedTimestamp:    validCreatedTimestamp,
-					ExpirationTimestamp: time.Unix(validCreatedTimestamp, 0).AddDate(0, 0, 7).UTC().Unix(),
+					ExpirationTimestamp: validExpirationTimestamp,
 				},
 			}, false, nil,
 		},
@@ -141,7 +141,7 @@ func TestValidateSecret(t *testing.T) {
 			&pbauth.Secret{
 				Key:                 "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
 				CreatedTimestamp:    validCreatedTimestamp,
-				ExpirationTimestamp: time.Unix(validCreatedTimestamp, 0).AddDate(0, 0, 7).UTC().Unix(),
+				ExpirationTimestamp: validExpirationTimestamp,
 			}, false, nil,
 		},
 	}
@@ -203,7 +203,7 @@ func TestNewToken(t *testing.T) {
 			&pbauth.Secret{
 				Key:                 "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
 				CreatedTimestamp:    validCreatedTimestamp,
-				ExpirationTimestamp: time.Unix(validCreatedTimestamp, 0).AddDate(0, 0, 7).UTC().Unix(),
+				ExpirationTimestamp: validExpirationTimestamp,
 			},
 			false, nil,
 		},
@@ -215,7 +215,70 @@ func TestNewToken(t *testing.T) {
 		} else {
 			assert.Nil(t, err)
 			assert.NotEqual(t, "", output)
-			fmt.Println(output)
+		}
+	}
+}
+
+func TestGetTokenSignature(t *testing.T) {
+	cases := []struct {
+		header   *Header
+		body     *Body
+		secret   *pbauth.Secret
+		isExpErr bool
+		expErr   error
+	}{
+		{nil, nil, nil, true, consts.ErrNilHeader},
+		{&Header{}, nil, nil, true, consts.ErrNilBody},
+		{&Header{}, &Body{}, nil, true, consts.ErrInvalidUUID},
+		{
+			&Header{},
+			&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"},
+			nil, true, consts.ErrNilSecret,
+		},
+		{
+			&Header{},
+			&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"},
+			&pbauth.Secret{
+				Key: "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
+			},
+			true, consts.ErrInvalidSecretCreateTimestamp,
+		},
+		{
+			&Header{},
+			&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"},
+			&pbauth.Secret{
+				Key:              "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
+				CreatedTimestamp: time.Now().UTC().Unix() + 1,
+			},
+			true, consts.ErrInvalidSecretCreateTimestamp,
+		},
+		{
+			&Header{},
+			&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"},
+			&pbauth.Secret{
+				Key:              "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
+				CreatedTimestamp: validCreatedTimestamp,
+			},
+			true, consts.ErrExpiredSecret,
+		},
+		{
+			&Header{},
+			&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"},
+			&pbauth.Secret{
+				Key:                 "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
+				CreatedTimestamp:    validCreatedTimestamp,
+				ExpirationTimestamp: validExpirationTimestamp,
+			},
+			false, nil,
+		},
+	}
+	for _, c := range cases {
+		output, err := getTokenSignature(c.header, c.body, c.secret)
+		if c.isExpErr {
+			assert.EqualError(t, err, c.expErr.Error())
+		} else {
+			assert.Nil(t, err)
+			assert.NotEqual(t, "", output)
 		}
 	}
 }
