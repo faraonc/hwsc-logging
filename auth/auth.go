@@ -5,7 +5,6 @@ import (
 	pbauth "github.com/hwsc-org/hwsc-api-blocks/lib"
 	"github.com/hwsc-org/hwsc-lib/consts"
 	"strings"
-	"time"
 )
 
 // Authority ensures the identification is authorized.
@@ -97,10 +96,6 @@ func (a *Authority) HasExpired() bool {
 		return true
 	}
 	if err := validateBody(a.body); err != nil {
-		return true
-	}
-	expirationTime := a.body.ExpirationTimestamp
-	if expirationTime == 0 || time.Now().UTC().Unix() >= expirationTime {
 		return true
 	}
 	return false

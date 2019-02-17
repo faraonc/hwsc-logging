@@ -9,6 +9,7 @@ var (
 	ErrNilHeader                    = errors.New("nil header")
 	ErrNilBody                      = errors.New("nil body")
 	ErrNilSecret                    = errors.New("nil secret")
+	ErrExpiredBody                  = errors.New("expired body")
 	ErrEmptyToken                   = errors.New("empty token string")
 	ErrEmptySecret                  = errors.New("empty secret key")
 	ErrExpiredSecret                = errors.New("expired secret key")

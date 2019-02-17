@@ -15,8 +15,8 @@ const (
 )
 
 var (
-	validCreatedTimestamp    = time.Now().UTC().Unix() - 60 // seconds
-	validExpirationTimestamp = time.Unix(validCreatedTimestamp, 0).AddDate(0, 0, 7).UTC().Unix()
+	validCreatedTimestamp    = time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC).Unix()
+	validExpirationTimestamp = time.Unix(validCreatedTimestamp, 0).AddDate(30, 0, 0).UTC().Unix()
 	// validHeader and encodedHeader are dependent to each other
 	validHeader = &Header{
 		Alg:      Hs512,
@@ -27,9 +27,15 @@ var (
 	validBody = &Body{
 		UUID:                "01d3x3wm2nnrdfzp0tka2vw9dx",
 		Permission:          Admin,
-		ExpirationTimestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC).Unix(),
+		ExpirationTimestamp: time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC).Unix(),
 	}
-	encodedBody = "eyJVVUlEIjoiMDFkM3gzd20ybm5yZGZ6cDB0a2Eydnc5ZHgiLCJQZXJtaXNzaW9uIjozLCJFeHBpcmF0aW9uVGltZXN0YW1wIjoxNTc3ODM2ODAwfQ"
+	encodedBody = "eyJVVUlEIjoiMDFkM3gzd20ybm5yZGZ6cDB0a2Eydnc5ZHgiLCJQZXJtaXNzaW9uIjozLCJFeHBpcmF0aW9uVGltZXN0YW1wIjoxODkzNDU2MDAwfQ"
+	validSecret = &pbauth.Secret{
+		Key:                 "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
+		CreatedTimestamp:    validCreatedTimestamp,
+		ExpirationTimestamp: validExpirationTimestamp,
+	}
+	validTokenString = "eyJBbGciOjIsIlRva2VuVHlwIjoxfQ.eyJVVUlEIjoiMDFkM3gzd20ybm5yZGZ6cDB0a2Eydnc5ZHgiLCJQZXJtaXNzaW9uIjozLCJFeHBpcmF0aW9uVGltZXN0YW1wIjoxODkzNDU2MDAwfQ.8lVhZo_W6KmGI2oi5JNHioDvPq2Yl86v4uae3RfKc-qoKUwHNxFtXO2NFmChsi35__t1uC_SD-Ay_MoateeDNg=="
 )
 
 func TestValidateIdentification(t *testing.T) {
@@ -73,12 +79,8 @@ func TestValidateIdentification(t *testing.T) {
 		},
 		{
 			&pbauth.Identification{
-				Token: "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ1dWlkIjoiMTIzNDU2Nzg5MCIsInBlcm1pc3Npb24iOiJUb2tlbi5BRE1JTiIsImV4cGlyYXRpb25fdGltZSI6MTU0OTA5MzkxMH0.OZFQ_zU1F2BJm6kyYzsBns5qmOxbVbUnQV2SU1B_kyPfXPOmUd0fddRvF0I3IqaDz-55H7Q80w8zQyldMQ7AAg",
-				Secret: &pbauth.Secret{
-					Key:                 "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
-					CreatedTimestamp:    validCreatedTimestamp,
-					ExpirationTimestamp: validExpirationTimestamp,
-				},
+				Token:  "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ1dWlkIjoiMTIzNDU2Nzg5MCIsInBlcm1pc3Npb24iOiJUb2tlbi5BRE1JTiIsImV4cGlyYXRpb25fdGltZSI6MTU0OTA5MzkxMH0.OZFQ_zU1F2BJm6kyYzsBns5qmOxbVbUnQV2SU1B_kyPfXPOmUd0fddRvF0I3IqaDz-55H7Q80w8zQyldMQ7AAg",
+				Secret: validSecret,
 			}, false, nil,
 		},
 	}
@@ -120,7 +122,8 @@ func TestValidateBody(t *testing.T) {
 	}{
 		{nil, true, consts.ErrNilBody},
 		{&Body{}, true, consts.ErrInvalidUUID},
-		{&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"}, false, nil},
+		{&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"}, true, consts.ErrExpiredBody},
+		{validBody, false, nil},
 	}
 	for _, c := range cases {
 		err := validateBody(c.input)
@@ -156,13 +159,7 @@ func TestValidateSecret(t *testing.T) {
 				CreatedTimestamp: time.Now().UTC().Unix() + 1,
 			}, true, consts.ErrInvalidSecretCreateTimestamp,
 		},
-		{
-			&pbauth.Secret{
-				Key:                 "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
-				CreatedTimestamp:    validCreatedTimestamp,
-				ExpirationTimestamp: validExpirationTimestamp,
-			}, false, nil,
-		},
+		{validSecret, false, nil},
 	}
 	for _, c := range cases {
 		err := validateSecret(c.input)
@@ -171,6 +168,21 @@ func TestValidateSecret(t *testing.T) {
 		} else {
 			assert.Nil(t, err)
 		}
+	}
+}
+
+func TestIsExpired(t *testing.T) {
+	cases := []struct {
+		input     int64
+		expOutput bool
+	}{
+		{0, true},
+		{time.Now().UTC().Unix() - 60, false},
+		{time.Now().UTC().Unix() + 60, false},
+	}
+	for _, c := range cases {
+		actOuput := isExpired(c.input)
+		assert.Equal(t, c.expOutput, actOuput)
 	}
 }
 
@@ -185,47 +197,29 @@ func TestNewToken(t *testing.T) {
 		{nil, nil, nil, true, consts.ErrNilHeader},
 		{validHeader, nil, nil, true, consts.ErrNilBody},
 		{validHeader, &Body{}, nil, true, consts.ErrInvalidUUID},
-		{
-			validHeader,
-			&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"},
-			nil, true, consts.ErrNilSecret,
-		},
-		{
-			validHeader,
-			&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"},
+		{validHeader, &Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"}, nil, true, consts.ErrExpiredBody},
+		{validHeader, validBody, nil, true, consts.ErrNilSecret},
+		{validHeader, validBody,
 			&pbauth.Secret{
 				Key: "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
 			},
 			true, consts.ErrInvalidSecretCreateTimestamp,
 		},
-		{
-			validHeader,
-			&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"},
+		{validHeader, validBody,
 			&pbauth.Secret{
 				Key:              "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
 				CreatedTimestamp: time.Now().UTC().Unix() + 1,
 			},
 			true, consts.ErrInvalidSecretCreateTimestamp,
 		},
-		{
-			validHeader,
-			&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"},
+		{validHeader, validBody,
 			&pbauth.Secret{
 				Key:              "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
 				CreatedTimestamp: validCreatedTimestamp,
 			},
 			true, consts.ErrExpiredSecret,
 		},
-		{
-			validHeader,
-			&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"},
-			&pbauth.Secret{
-				Key:                 "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
-				CreatedTimestamp:    validCreatedTimestamp,
-				ExpirationTimestamp: validExpirationTimestamp,
-			},
-			false, nil,
-		},
+		{validHeader, validBody, validSecret, false, nil},
 	}
 	for _, c := range cases {
 		output, err := NewToken(c.header, c.body, c.secret)
@@ -252,44 +246,30 @@ func TestGetTokenSignature(t *testing.T) {
 		{
 			validHeader,
 			&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"},
-			nil, true, consts.ErrNilSecret,
+			nil, true, consts.ErrExpiredBody,
 		},
-		{
-			validHeader,
-			&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"},
+		{validHeader, validBody, nil, true, consts.ErrNilSecret},
+		{validHeader, validBody,
 			&pbauth.Secret{
 				Key: "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
 			},
 			true, consts.ErrInvalidSecretCreateTimestamp,
 		},
-		{
-			validHeader,
-			&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"},
+		{validHeader, validBody,
 			&pbauth.Secret{
 				Key:              "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
 				CreatedTimestamp: time.Now().UTC().Unix() + 1,
 			},
 			true, consts.ErrInvalidSecretCreateTimestamp,
 		},
-		{
-			validHeader,
-			&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"},
+		{validHeader, validBody,
 			&pbauth.Secret{
 				Key:              "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
 				CreatedTimestamp: validCreatedTimestamp,
 			},
 			true, consts.ErrExpiredSecret,
 		},
-		{
-			validHeader,
-			&Body{UUID: "01d3x3wm2nnrdfzp0tka2vw9dx"},
-			&pbauth.Secret{
-				Key:                 "j2Yzh-VcIm-lYUzBuqt8TVPeUHNYB5MP1gWvz3Bolow=",
-				CreatedTimestamp:    validCreatedTimestamp,
-				ExpirationTimestamp: validExpirationTimestamp,
-			},
-			false, nil,
-		},
+		{validHeader, validBody, validSecret, false, nil},
 	}
 	for _, c := range cases {
 		output, err := getTokenSignature(c.header, c.body, c.secret)

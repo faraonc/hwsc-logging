@@ -43,7 +43,9 @@ func validateBody(body *Body) error {
 	if err := validation.ValidateUserUUID(body.UUID); err != nil {
 		return err
 	}
-	// Expiration timestamp is not verified
+	if isExpired(body.ExpirationTimestamp) {
+		return consts.ErrExpiredBody
+	}
 	return nil
 }
 
@@ -58,11 +60,17 @@ func validateSecret(secret *pbauth.Secret) error {
 	if createTime == 0 || createTime >= time.Now().UTC().Unix() {
 		return consts.ErrInvalidSecretCreateTimestamp
 	}
-	expirationTime := secret.ExpirationTimestamp
-	if expirationTime == 0 || time.Now().UTC().Unix() >= expirationTime {
+	if isExpired(secret.ExpirationTimestamp) {
 		return consts.ErrExpiredSecret
 	}
 	return nil
+}
+
+func isExpired(timestamp int64) bool {
+	if timestamp == 0 || time.Now().UTC().Unix() >= timestamp {
+		return true
+	}
+	return false
 }
 
 // NewToken generates token string using a header, body, and secret.
@@ -77,8 +85,6 @@ func NewToken(header *Header, body *Body, secret *pbauth.Secret) (string, error)
 	if err := validateSecret(secret); err != nil {
 		return "", err
 	}
-	// token expires in 2 hours
-	body.ExpirationTimestamp = time.Now().UTC().Add(time.Hour * time.Duration(2)).Unix()
 	tokenString, err := getTokenSignature(header, body, secret)
 	if err != nil {
 		return "", err
