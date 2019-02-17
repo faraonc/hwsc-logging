@@ -8,14 +8,15 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	pb "github.com/hwsc-org/hwsc-api-blocks/lib"
+	pbauth "github.com/hwsc-org/hwsc-api-blocks/lib"
 	"github.com/hwsc-org/hwsc-lib/consts"
+	"github.com/hwsc-org/hwsc-lib/validation"
 	"hash"
 	"strings"
 	"time"
 )
 
-func validateIdentification(id *pb.Identification) error {
+func validateIdentification(id *pbauth.Identification) error {
 	if id == nil {
 		return consts.ErrNilIdentification
 	}
@@ -39,14 +40,16 @@ func validateBody(body *Body) error {
 	if body == nil {
 		return consts.ErrNilBody
 	}
-	// TODO user user-svc validation
-	if strings.TrimSpace(body.UUID) == "" {
-		return consts.ErrInvalidUUID
+	if err := validation.ValidateUserUUID(body.UUID); err != nil {
+		return err
+	}
+	if isExpired(body.ExpirationTimestamp) {
+		return consts.ErrExpiredBody
 	}
 	return nil
 }
 
-func validateSecret(secret *pb.Secret) error {
+func validateSecret(secret *pbauth.Secret) error {
 	if secret == nil {
 		return consts.ErrNilSecret
 	}
@@ -57,12 +60,22 @@ func validateSecret(secret *pb.Secret) error {
 	if createTime == 0 || createTime >= time.Now().UTC().Unix() {
 		return consts.ErrInvalidSecretCreateTimestamp
 	}
+	if isExpired(secret.ExpirationTimestamp) {
+		return consts.ErrExpiredSecret
+	}
 	return nil
+}
+
+func isExpired(timestamp int64) bool {
+	if timestamp == 0 || time.Now().UTC().Unix() >= timestamp {
+		return true
+	}
+	return false
 }
 
 // NewToken generates token string using a header, body, and secret.
 // Return error if an error exists during signing.
-func NewToken(header *Header, body *Body, secret *pb.Secret) (string, error) {
+func NewToken(header *Header, body *Body, secret *pbauth.Secret) (string, error) {
 	if err := validateHeader(header); err != nil {
 		return "", err
 	}
@@ -72,8 +85,6 @@ func NewToken(header *Header, body *Body, secret *pb.Secret) (string, error) {
 	if err := validateSecret(secret); err != nil {
 		return "", err
 	}
-	// token expires in 2 hours
-	body.ExpirationTimestamp = time.Now().UTC().Add(time.Hour * time.Duration(2)).Unix()
 	tokenString, err := getTokenSignature(header, body, secret)
 	if err != nil {
 		return "", err
@@ -83,7 +94,7 @@ func NewToken(header *Header, body *Body, secret *pb.Secret) (string, error) {
 
 // getTokenSignature gets the token signature using the encoded header, body, and secret key.
 // Return error if an error exists during signing.
-func getTokenSignature(header *Header, body *Body, secret *pb.Secret) (string, error) {
+func getTokenSignature(header *Header, body *Body, secret *pbauth.Secret) (string, error) {
 	if err := validateHeader(header); err != nil {
 		return "", err
 	}
@@ -112,7 +123,7 @@ func getTokenSignature(header *Header, body *Body, secret *pb.Secret) (string, e
 
 // buildTokenSignature builds the token signature using the encoded header, body, selected algorithm, and secret key.
 // Return error if an error exists during signing.
-func buildTokenSignature(encodedHeader string, encodedBody string, alg Algorithm, secret *pb.Secret) (string, error) {
+func buildTokenSignature(encodedHeader string, encodedBody string, alg Algorithm, secret *pbauth.Secret) (string, error) {
 	if strings.TrimSpace(encodedHeader) == "" {
 		return "", consts.ErrInvalidEncodedHeader
 	}
@@ -144,6 +155,9 @@ func buildTokenSignature(encodedHeader string, encodedBody string, alg Algorithm
 // base64Encode takes in a interface and encodes it as a string.
 // Returns a base 64 encoded string or error during marshalling.
 func base64Encode(src interface{}) (string, error) {
+	if src == nil {
+		return "", consts.ErrNilInterface
+	}
 	srcMarshal, err := json.Marshal(src)
 	if err != nil {
 		return "", err
@@ -156,6 +170,9 @@ func base64Encode(src interface{}) (string, error) {
 // base64Encode takes in a base 64 encoded string.
 // Returns the actual string or an error of it fails to decode the string.
 func base64Decode(src string) (string, error) {
+	if strings.TrimSpace(src) == "" {
+		return "", consts.ErrEmptyString
+	}
 	if l := len(src) % 4; l > 0 {
 		src += strings.Repeat("=", 4-l)
 	}
@@ -168,7 +185,7 @@ func base64Decode(src string) (string, error) {
 }
 
 // hashSignature generates a HMAC hash of a string using a secret
-func hashSignature(alg Algorithm, signatureValue string, secret *pb.Secret) (string, error) {
+func hashSignature(alg Algorithm, signatureValue string, secret *pbauth.Secret) (string, error) {
 	if strings.TrimSpace(signatureValue) == "" {
 		return "", consts.ErrInvalidSignatureValue
 	}
@@ -183,14 +200,17 @@ func hashSignature(alg Algorithm, signatureValue string, secret *pb.Secret) (str
 	case Hs512:
 		h = hmac.New(sha512.New, key)
 	default:
-		h = hmac.New(sha256.New, key)
+		return "", consts.ErrNoHashAlgorithm
 	}
 	h.Write([]byte(signatureValue))
 	return base64.URLEncoding.EncodeToString(h.Sum(nil)), nil
 }
 
-// isValidHash validates a hash against a value
-func isValidHash(alg Algorithm, signatureValue string, secret *pb.Secret, hashedValue string) bool {
+// isEquivalentHash validates a hash against a value
+func isEquivalentHash(alg Algorithm, signatureValue string, secret *pbauth.Secret, hashedValue string) bool {
+	if err := validateSecret(secret); err != nil {
+		return false
+	}
 	/*
 		hashSignature cannot be reversed all you can do is hash the same character and compare it with a hashed value.
 		If it evaluates to true, then the character is a what is in the hash.
