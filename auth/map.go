@@ -5,7 +5,8 @@ const (
 	strUserRegistration = "USER_REGISTRATION"
 	strUser             = "USER"
 	strAdmin            = "ADMIN"
-	SecretByteSize      = 32
+	// SecretByteSize bytes used to generate secret key
+	SecretByteSize = 32
 )
 
 var (

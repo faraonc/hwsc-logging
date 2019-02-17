@@ -9,6 +9,7 @@ var (
 	ErrNilSecret                    = errors.New("nil secret")
 	ErrEmptyToken                   = errors.New("empty token string")
 	ErrEmptySecret                  = errors.New("empty secret key")
+	ErrExpiredSecret                = errors.New("expired secret key")
 	ErrInvalidSecretCreateTimestamp = errors.New("invalid secret create timestamp")
 	ErrExpiredToken                 = errors.New("expired token string")
 	ErrIncompleteToken              = errors.New("token should contain header, body, signature")
