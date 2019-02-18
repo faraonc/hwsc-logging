@@ -12,18 +12,37 @@ type Authority struct {
 	id                 *pbauth.Identification
 	header             *Header
 	body               *Body
+	tokenRequired      TokenType
 	permissionRequired Permission
 }
 
+// NewAuthority makes an authority for a service with the required token and permission level.
+// The authority defaults to NoPermission if unknown permission level is used.
+// Returns an authority with the embedded required token and permission level.
+func NewAuthority(tokenRequired TokenType, permissionRequired Permission) Authority {
+	permission := NoPermission
+	if permissionRequired > NoPermission && permissionRequired <= Admin {
+		permission = permissionRequired
+	}
+	token := NoType
+	if tokenRequired > NoType && tokenRequired <= Jwt {
+		token = tokenRequired
+	}
+	return Authority{
+		header:             &Header{},
+		body:               &Body{},
+		tokenRequired:      token,
+		permissionRequired: permission,
+	}
+}
+
 // Authorize the identification and generates the body.
-// Returns an error if not authorized
-func (a *Authority) Authorize(id *pbauth.Identification, permissionRequired Permission) error {
-	if err := validateIdentification(id); err != nil {
+// Returns an error if not authorized.
+func (a *Authority) Authorize(id *pbauth.Identification) error {
+	if err := ValidateIdentification(id); err != nil {
 		return err
 	}
-	// a.header and a.body can be nil because we generate the body on Validate()
 	a.id = id
-	a.permissionRequired = permissionRequired
 	if err := a.Validate(); err != nil {
 		return err
 	}
@@ -35,13 +54,14 @@ func (a *Authority) Invalidate() {
 	a.id = nil
 	a.header = nil
 	a.body = nil
+	a.tokenRequired = NoType
 	a.permissionRequired = NoPermission
 }
 
 // Validate checks if the token is authorized using a secret.
 // Returns an error if not valid.
 func (a *Authority) Validate() error {
-	if err := validateIdentification(a.id); err != nil {
+	if err := ValidateIdentification(a.id); err != nil {
 		return err
 	}
 	tokenSignature := strings.Split(a.id.GetToken(), ".")
@@ -59,6 +79,9 @@ func (a *Authority) Validate() error {
 	if err := json.Unmarshal([]byte(decodedHeader), a.header); err != nil {
 		return err
 	}
+	if err := ValidateHeader(a.header); err != nil {
+		return err
+	}
 	// check 4: decode body
 	decodedBody, err := base64Decode(tokenSignature[1])
 	if err != nil {
@@ -69,13 +92,20 @@ func (a *Authority) Validate() error {
 	if err := json.Unmarshal([]byte(decodedBody), a.body); err != nil {
 		return err
 	}
+	// check expiration in body
+	if err := ValidateBody(a.body); err != nil {
+		return err
+	}
 	// check 6: checks permission requirement
 	if a.body.Permission < a.permissionRequired {
 		return consts.ErrInvalidPermission
 	}
-	// check 7: check expiration
-	if a.HasExpired() {
-		return consts.ErrExpiredToken
+	if a.body.Permission == Admin && a.header.Alg != Hs512 {
+		return consts.ErrInvalidPermission
+	}
+	// check 7: checks token type
+	if a.header.TokenTyp != a.tokenRequired {
+		return consts.ErrInvalidRequiredTokenType
 	}
 	// check 8: rebuild the signature using the secret
 	suspectedSignature, err := buildTokenSignature(tokenSignature[0], tokenSignature[1], a.header.Alg, a.id.GetSecret())
@@ -92,10 +122,11 @@ func (a *Authority) Validate() error {
 // HasExpired checks if the token has expired.
 // Returns true if token has expired, or invalid header or body
 func (a *Authority) HasExpired() bool {
-	if err := validateHeader(a.header); err != nil {
+	// Secret can expire, but not the token.
+	if err := ValidateHeader(a.header); err != nil {
 		return true
 	}
-	if err := validateBody(a.body); err != nil {
+	if err := ValidateBody(a.body); err != nil {
 		return true
 	}
 	return false

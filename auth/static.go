@@ -16,7 +16,10 @@ import (
 	"time"
 )
 
-func validateIdentification(id *pbauth.Identification) error {
+// ValidateIdentification validates Identification along with the embedded Secret.
+// Checks if the Secret has expired.
+// Returns the first error encountered.
+func ValidateIdentification(id *pbauth.Identification) error {
 	if id == nil {
 		return consts.ErrNilIdentification
 	}
@@ -29,14 +32,19 @@ func validateIdentification(id *pbauth.Identification) error {
 	return nil
 }
 
-func validateHeader(header *Header) error {
+// ValidateHeader validates Header.
+// Returns the first error encountered.
+func ValidateHeader(header *Header) error {
 	if header == nil {
 		return consts.ErrNilHeader
 	}
 	return nil
 }
 
-func validateBody(body *Body) error {
+// ValidateBody validates Body.
+// Checks if token string has expired.
+// Returns the first error encountered.
+func ValidateBody(body *Body) error {
 	if body == nil {
 		return consts.ErrNilBody
 	}
@@ -78,14 +86,20 @@ func isExpired(timestamp int64) bool {
 // NewToken generates token string using a header, body, and secret.
 // Return error if an error exists during signing.
 func NewToken(header *Header, body *Body, secret *pbauth.Secret) (string, error) {
-	if err := validateHeader(header); err != nil {
+	if err := ValidateHeader(header); err != nil {
 		return "", err
 	}
-	if err := validateBody(body); err != nil {
+	if err := ValidateBody(body); err != nil {
 		return "", err
 	}
 	if err := ValidateSecret(secret); err != nil {
 		return "", err
+	}
+	if body.Permission == Admin && header.Alg != Hs512 {
+		return "", consts.ErrInvalidPermission
+	}
+	if header.TokenTyp != Jwt {
+		return "", consts.ErrInvalidJWT
 	}
 	tokenString, err := getTokenSignature(header, body, secret)
 	if err != nil {
@@ -97,14 +111,20 @@ func NewToken(header *Header, body *Body, secret *pbauth.Secret) (string, error)
 // getTokenSignature gets the token signature using the encoded header, body, and secret key.
 // Return error if an error exists during signing.
 func getTokenSignature(header *Header, body *Body, secret *pbauth.Secret) (string, error) {
-	if err := validateHeader(header); err != nil {
+	if err := ValidateHeader(header); err != nil {
 		return "", err
 	}
-	if err := validateBody(body); err != nil {
+	if err := ValidateBody(body); err != nil {
 		return "", err
 	}
 	if err := ValidateSecret(secret); err != nil {
 		return "", err
+	}
+	if body.Permission == Admin && header.Alg != Hs512 {
+		return "", consts.ErrInvalidPermission
+	}
+	if header.TokenTyp != Jwt {
+		return "", consts.ErrInvalidJWT
 	}
 	// Token Signature = <encoded header>.<encoded body>.<hashed(<encoded header>.<encoded body>)>
 	// 1. Encode the header
