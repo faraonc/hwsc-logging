@@ -174,7 +174,7 @@ func TestValidateSecret(t *testing.T) {
 		{validSecret, false, nil},
 	}
 	for _, c := range cases {
-		err := validateSecret(c.input)
+		err := ValidateSecret(c.input)
 		if c.isExpErr {
 			assert.EqualError(t, err, c.expErr.Error())
 		} else {

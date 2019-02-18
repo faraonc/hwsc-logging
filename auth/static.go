@@ -23,7 +23,7 @@ func validateIdentification(id *pbauth.Identification) error {
 	if strings.TrimSpace(id.GetToken()) == "" {
 		return consts.ErrEmptyToken
 	}
-	if err := validateSecret(id.GetSecret()); err != nil {
+	if err := ValidateSecret(id.GetSecret()); err != nil {
 		return err
 	}
 	return nil
@@ -49,7 +49,9 @@ func validateBody(body *Body) error {
 	return nil
 }
 
-func validateSecret(secret *pbauth.Secret) error {
+// ValidateSecret checks if the secret is still valid and has not expired.
+// Returns an error if the Secret is not valid and has expired.
+func ValidateSecret(secret *pbauth.Secret) error {
 	if secret == nil {
 		return consts.ErrNilSecret
 	}
@@ -82,7 +84,7 @@ func NewToken(header *Header, body *Body, secret *pbauth.Secret) (string, error)
 	if err := validateBody(body); err != nil {
 		return "", err
 	}
-	if err := validateSecret(secret); err != nil {
+	if err := ValidateSecret(secret); err != nil {
 		return "", err
 	}
 	tokenString, err := getTokenSignature(header, body, secret)
@@ -101,7 +103,7 @@ func getTokenSignature(header *Header, body *Body, secret *pbauth.Secret) (strin
 	if err := validateBody(body); err != nil {
 		return "", err
 	}
-	if err := validateSecret(secret); err != nil {
+	if err := ValidateSecret(secret); err != nil {
 		return "", err
 	}
 	// Token Signature = <encoded header>.<encoded body>.<hashed(<encoded header>.<encoded body>)>
@@ -130,7 +132,7 @@ func buildTokenSignature(encodedHeader string, encodedBody string, alg Algorithm
 	if strings.TrimSpace(encodedBody) == "" {
 		return "", consts.ErrInvalidEncodedBody
 	}
-	if err := validateSecret(secret); err != nil {
+	if err := ValidateSecret(secret); err != nil {
 		return "", err
 	}
 	// 3. Build <encoded header>.<encoded body>
@@ -189,7 +191,7 @@ func hashSignature(alg Algorithm, signatureValue string, secret *pbauth.Secret) 
 	if strings.TrimSpace(signatureValue) == "" {
 		return "", consts.ErrInvalidSignatureValue
 	}
-	if err := validateSecret(secret); err != nil {
+	if err := ValidateSecret(secret); err != nil {
 		return "", err
 	}
 	key := []byte(secret.Key)
@@ -208,7 +210,7 @@ func hashSignature(alg Algorithm, signatureValue string, secret *pbauth.Secret) 
 
 // isEquivalentHash validates a hash against a value
 func isEquivalentHash(alg Algorithm, signatureValue string, secret *pbauth.Secret, hashedValue string) bool {
-	if err := validateSecret(secret); err != nil {
+	if err := ValidateSecret(secret); err != nil {
 		return false
 	}
 	/*
