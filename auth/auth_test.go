@@ -392,6 +392,18 @@ func TestValidate(t *testing.T) {
 				},
 			}, false, nil,
 		},
+		{"test for invalid header with unknown algorithm",
+			&Authority{
+				header:             &Header{},
+				body:               &Body{},
+				tokenRequired:      Jwt,
+				permissionRequired: User,
+				id: &pbauth.Identification{
+					Token:  unknownAlgToken,
+					Secret: validSecret,
+				},
+			}, true, consts.ErrUnknownAlgorithm,
+		},
 	}
 	for _, c := range cases {
 		err := c.authority.Validate()

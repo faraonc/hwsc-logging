@@ -132,6 +132,18 @@ func TestValidateBody(t *testing.T) {
 				UUID: "01d3x3wm2nnrdfzp0tka2vw9dx",
 			}, true, consts.ErrExpiredBody,
 		},
+		{"test for negative permission",
+			&Body{
+				UUID:       "01d3x3wm2nnrdfzp0tka2vw9dx",
+				Permission: NoPermission - 1,
+			}, true, consts.ErrUnknownPermission,
+		},
+		{"test for over permission",
+			&Body{
+				UUID:       "01d3x3wm2nnrdfzp0tka2vw9dx",
+				Permission: Admin + 1,
+			}, true, consts.ErrUnknownPermission,
+		},
 		{"test for expired token string",
 			&Body{
 				UUID:                "01d3x3wm2nnrdfzp0tka2vw9dx",
