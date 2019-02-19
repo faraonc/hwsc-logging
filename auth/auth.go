@@ -122,6 +122,9 @@ func (a *Authority) Validate() error {
 // HasExpired checks if the token has expired.
 // Returns true if token has expired, or invalid header or body
 func (a *Authority) HasExpired() bool {
+	if a.id == nil {
+		return true
+	}
 	// Secret can expire, but not the token.
 	if err := ValidateHeader(a.header); err != nil {
 		return true
