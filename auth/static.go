@@ -98,6 +98,7 @@ func NewToken(header *Header, body *Body, secret *pbauth.Secret) (string, error)
 	if body.Permission == Admin && header.Alg != Hs512 {
 		return "", consts.ErrInvalidPermission
 	}
+	// Currently supports JWT
 	if header.TokenTyp != Jwt {
 		return "", consts.ErrInvalidJWT
 	}
