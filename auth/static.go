@@ -38,6 +38,14 @@ func ValidateHeader(header *Header) error {
 	if header == nil {
 		return consts.ErrNilHeader
 	}
+	tokenType := header.TokenTyp
+	if tokenType < NoType || tokenType > Jwt {
+		return consts.ErrUnknownTokenType
+	}
+	alg := header.Alg
+	if alg < NoAlg || alg > Hs512 {
+		return consts.ErrUnknownAlgorithm
+	}
 	return nil
 }
 
@@ -50,6 +58,10 @@ func ValidateBody(body *Body) error {
 	}
 	if err := validation.ValidateUserUUID(body.UUID); err != nil {
 		return err
+	}
+	permission := body.Permission
+	if permission < NoPermission || permission > Admin {
+		return consts.ErrUnknownPermission
 	}
 	if isExpired(body.ExpirationTimestamp) {
 		return consts.ErrExpiredBody

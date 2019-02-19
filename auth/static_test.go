@@ -85,6 +85,26 @@ func TestValidateHeader(t *testing.T) {
 		expErr   error
 	}{
 		{"test for nil header", nil, true, consts.ErrNilHeader},
+		{"test for negative token type",
+			&Header{
+				TokenTyp: NoType - 1,
+			}, true, consts.ErrUnknownTokenType,
+		},
+		{"test for over token type",
+			&Header{
+				TokenTyp: Jwt + 1,
+			}, true, consts.ErrUnknownTokenType,
+		},
+		{"test for negative alg",
+			&Header{
+				Alg: NoAlg - 1,
+			}, true, consts.ErrUnknownAlgorithm,
+		},
+		{"test for over alg",
+			&Header{
+				Alg: Hs512 + 1,
+			}, true, consts.ErrUnknownAlgorithm,
+		},
 		{"test for valid 256 JWT header", valid256JWT, false, nil},
 		{"test for valid 512 JWT header", valid512JWT, false, nil},
 	}
