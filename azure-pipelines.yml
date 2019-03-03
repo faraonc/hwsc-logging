@@ -61,7 +61,6 @@ steps:
       codeCoverageTool: Cobertura
       summaryFileLocation: $(System.DefaultWorkingDirectory)/**/coverage.xml
       reportDirectory: $(System.DefaultWorkingDirectory)/**/coverage
-      failOnStandardError: 'true'
 
   - script: go build -v ./...
     workingDirectory: '$(modulePath)'
