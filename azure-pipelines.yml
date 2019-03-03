@@ -48,20 +48,20 @@ steps:
       gocov convert coverage.out > coverage.json
       gocov-html < coverage.json > coverage/index.html
     workingDirectory: '$(modulePath)'
-    inputs:
-      failOnStandardError: 'true'
     displayName: 'Run Unit Test'
 
   - task: PublishTestResults@2
     inputs:
       testRunner: JUnit
       testResultsFiles: $(System.DefaultWorkingDirectory)/**/report.xml
+      failOnStandardError: 'true'
 
   - task: PublishCodeCoverageResults@1
     inputs:
       codeCoverageTool: Cobertura
       summaryFileLocation: $(System.DefaultWorkingDirectory)/**/coverage.xml
       reportDirectory: $(System.DefaultWorkingDirectory)/**/coverage
+      failOnStandardError: 'true'
 
   - script: go build -v ./...
     workingDirectory: '$(modulePath)'
