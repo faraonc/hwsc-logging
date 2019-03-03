@@ -54,12 +54,14 @@ steps:
     inputs:
       testRunner: JUnit
       testResultsFiles: $(System.DefaultWorkingDirectory)/**/report.xml
+      failOnStandardError: 'true'
 
   - task: PublishCodeCoverageResults@1
     inputs:
       codeCoverageTool: Cobertura
       summaryFileLocation: $(System.DefaultWorkingDirectory)/**/coverage.xml
       reportDirectory: $(System.DefaultWorkingDirectory)/**/coverage
+      failOnStandardError: 'true'
 
   - script: go build -v ./...
     workingDirectory: '$(modulePath)'
