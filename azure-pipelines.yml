@@ -48,6 +48,8 @@ steps:
       gocov convert coverage.out > coverage.json
       gocov-html < coverage.json > coverage/index.html
     workingDirectory: '$(modulePath)'
+    inputs:
+      failOnStandardError: 'true'
     displayName: 'Run Unit Test'
 
   - task: PublishTestResults@2
