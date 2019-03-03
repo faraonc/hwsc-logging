@@ -43,7 +43,7 @@ func TestAuthorize(t *testing.T) {
 		requiredPerm  Permission
 		requiredToken TokenType
 	}{
-		{"test for nil identification", nil, false, consts.ErrNilIdentification, NoPermission, NoType},
+		{"test for nil identification", nil, true, consts.ErrNilIdentification, NoPermission, NoType},
 		{"test for empty token string", &pbauth.Identification{}, true, consts.ErrEmptyToken, NoPermission, NoType},
 		{"test for nil secret",
 			&pbauth.Identification{
