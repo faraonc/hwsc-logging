@@ -16,7 +16,7 @@ func TestValidateIdentification(t *testing.T) {
 		isExpErr bool
 		expErr   error
 	}{
-		{"test nil identification", nil, true, consts.ErrNilIdentification},
+		{"test nil identification", nil, false, consts.ErrNilIdentification},
 		{"test empty token string", &pbauth.Identification{}, true, consts.ErrEmptyToken},
 		{"test nil secret",
 			&pbauth.Identification{
