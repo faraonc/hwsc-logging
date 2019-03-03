@@ -36,7 +36,8 @@ steps:
 
   - task: CmdLine@2
       inputs:
-        script: go get -v -t -d ./...
+        script: |
+          go get -v -t -d ./...
         workingDirectory: '$(modulePath)'
         failOnStandardError: 'true'
         displayName: 'Go Get Dependencies'
