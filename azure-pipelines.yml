@@ -29,12 +29,12 @@ steps:
       mv !(gopath) '$(modulePath)'
       echo '##vso[task.prependpath]$(GOBIN)'
       echo '##vso[task.prependpath]$(GOROOT)/bin'
-    failOnStandardError: 'true'
+    failOnStandardError: true
     displayName: 'Set Up the Go Workspace'
 
   - script: go get -v -t -d ./...
     workingDirectory: '$(modulePath)'
-    failOnStandardError: 'true'
+    failOnStandardError: true
     displayName: 'Go Get Dependencies'
 
   - script: |
@@ -50,7 +50,7 @@ steps:
       gocov convert coverage.out > coverage.json
       gocov-html < coverage.json > coverage/index.html
     workingDirectory: '$(modulePath)'
-    failOnStandardError: 'true'
+    failOnStandardError: true
     displayName: 'Run Unit Test'
 
   - task: PublishTestResults@2
