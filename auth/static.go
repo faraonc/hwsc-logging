@@ -89,7 +89,7 @@ func ValidateSecret(secret *pbauth.Secret) error {
 }
 
 func isExpired(timestamp int64) bool {
-	if timestamp == 0 || time.Now().UTC().Unix() >= timestamp {
+	if timestamp <= 0 || time.Now().UTC().Unix() >= timestamp {
 		return true
 	}
 	return false
