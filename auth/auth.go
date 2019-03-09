@@ -2,7 +2,7 @@ package auth
 
 import (
 	"encoding/json"
-	pbauth "github.com/hwsc-org/hwsc-api-blocks/lib"
+	pbauth "github.com/hwsc-org/hwsc-api-blocks/int/lib"
 	"github.com/hwsc-org/hwsc-lib/consts"
 	"strings"
 )
