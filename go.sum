@@ -5,6 +5,8 @@ github.com/golang/protobuf v1.3.0 h1:kbxbvI4Un1LUWKxufD+BiE6AEExYYgkQLQmLFqA1LFk
 github.com/golang/protobuf v1.3.0/go.mod h1:Qd/q+1AKNOZr9uGQzbzCmRO6sUih6GTPZv6a1/R87v0=
 github.com/hwsc-org/hwsc-api-blocks v0.0.0-20190310100938-90fdd4e075ac h1:QZ7UHW+eszdJPY1d/UJhHBEJKjfThDkfKPmg22o81ZM=
 github.com/hwsc-org/hwsc-api-blocks v0.0.0-20190310100938-90fdd4e075ac/go.mod h1:/iVVgMsaXIOevC15fCsGWI0Dx2p6POFJQxeYbyjGst0=
+github.com/hwsc-org/hwsc-api-blocks v0.0.0-20190310103314-d5245c3ac7ad h1:fWzDe74AMENol7oBM5beu8A6gr2MZDVfRDBlYuFnHBM=
+github.com/hwsc-org/hwsc-api-blocks v0.0.0-20190310103314-d5245c3ac7ad/go.mod h1:/iVVgMsaXIOevC15fCsGWI0Dx2p6POFJQxeYbyjGst0=
 github.com/oklog/ulid v1.3.1 h1:EGfNDEx6MqHz8B3uNV6QAib1UR2Lm97sHi3ocA6ESJ4=
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
