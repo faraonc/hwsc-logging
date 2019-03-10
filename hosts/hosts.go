@@ -1,5 +1,7 @@
 package hosts
 
+import "fmt"
+
 // Host contains server configuration
 // `json:"address"` are key:value tags that can add meta information to structs
 // there can be json tags, yaml tags, xml, bson, protobuf, etc.
@@ -28,3 +30,9 @@ type SMTPHost struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
+
+// String prints readable address and port using
+func (h *Host) String() string {
+	return fmt.Sprintf("%s:%s", h.Address, h.Port)
+}
+
