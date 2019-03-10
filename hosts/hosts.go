@@ -35,4 +35,3 @@ type SMTPHost struct {
 func (h *Host) String() string {
 	return fmt.Sprintf("%s:%s", h.Address, h.Port)
 }
-
