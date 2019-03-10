@@ -13,6 +13,11 @@ type Host struct {
 	Network string `json:"network"`
 }
 
+// String prints readable address and port using
+func (h *Host) String() string {
+	return fmt.Sprintf("%s:%s", h.Address, h.Port)
+}
+
 // UserDBHost contains User database configurations
 type UserDBHost struct {
 	Host     string `json:"host"`
@@ -31,7 +36,17 @@ type SMTPHost struct {
 	Password string `json:"password"`
 }
 
-// String prints readable address and port using
-func (h *Host) String() string {
-	return fmt.Sprintf("%s:%s", h.Address, h.Port)
+// DocumentDBHost represents the Document database
+type DocumentDBHost struct {
+	// Writer address for writing to MongoDB server
+	Writer string `json:"writer"`
+
+	// Reader address for reading to MongoDB server
+	Reader string `json:"reader"`
+
+	// Name database name
+	Name string `json:"db"`
+
+	// Collection database collection name
+	Collection string `json:"collection"`
 }
