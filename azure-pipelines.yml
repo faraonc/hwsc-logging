@@ -35,6 +35,10 @@ steps:
     workingDirectory: '$(modulePath)'
     displayName: 'Go Get Dependencies'
 
+  - script: go build -v ./...
+    workingDirectory: '$(modulePath)'
+    displayName: 'Build Test'
+
   - script: |
       go test -v -cover -race ./...
       go get github.com/jstemmer/go-junit-report
@@ -64,7 +68,3 @@ steps:
       reportDirectory: $(System.DefaultWorkingDirectory)/**/coverage
       failIfCoverageEmpty: 'true'
       failOnStandardError: 'true'
-
-  - script: go build -v ./...
-    workingDirectory: '$(modulePath)'
-    displayName: 'Build Test'
