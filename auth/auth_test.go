@@ -2,7 +2,7 @@ package auth
 
 import (
 	"errors"
-	pbauth "github.com/hwsc-org/hwsc-api-blocks/int/lib"
+	pbauth "github.com/hwsc-org/hwsc-api-blocks/protobuf/lib"
 	"github.com/hwsc-org/hwsc-lib/consts"
 	"github.com/stretchr/testify/assert"
 	"testing"
