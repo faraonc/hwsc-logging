@@ -20,6 +20,8 @@ const (
 	NoType TokenType = iota
 	// Jwt JSON Web Token
 	Jwt
+	// Jet JSON Email Token
+	Jet
 )
 
 // Header contains the algorithm and token type used to sign the token.
