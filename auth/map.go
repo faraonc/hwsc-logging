@@ -6,6 +6,7 @@ const (
 	strUser             = "USER"
 	strAdmin            = "ADMIN"
 	strJWT              = "JWT"
+	strJET				= "JET"
 	strNoType           = "NO_TYPE"
 	strNoAlg            = "NO_ALG"
 	strHs256            = "HS256"
@@ -43,6 +44,7 @@ var (
 	TokenTypeStringMap = map[TokenType]string{
 		NoType: strNoType,
 		Jwt:    strJWT,
+		Jet: 	strJET,
 	}
 
 	// AlgorithmStringMap maps enum Algorithm to its string value
