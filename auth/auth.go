@@ -36,6 +36,19 @@ func NewAuthority(tokenRequired TokenType, permissionRequired Permission) Author
 	}
 }
 
+// Body extracts a copy of the body.
+func (a *Authority) Body() *Body {
+	if a.body == nil {
+		return nil
+	}
+
+	return &Body{
+		UUID:                a.body.UUID,
+		Permission:          a.body.Permission,
+		ExpirationTimestamp: a.body.ExpirationTimestamp,
+	}
+}
+
 // Authorize the identification and generates the body.
 // Returns an error if not authorized.
 func (a *Authority) Authorize(id *pbauth.Identification) error {

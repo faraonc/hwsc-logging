@@ -144,7 +144,7 @@ func TestAuthorize(t *testing.T) {
 	assert.EqualError(t, err, consts.ErrNilIdentification.Error(), "test for nil identification")
 }
 
-func TestInvalidate(t *testing.T) {
+func TestBody(t *testing.T) {
 	cases := []struct {
 		desc          string
 		id            *pbauth.Identification
@@ -169,6 +169,42 @@ func TestInvalidate(t *testing.T) {
 	for _, c := range cases {
 		a := NewAuthority(c.requiredToken, c.requiredPerm)
 		assert.Equal(t, c.requiredPerm, a.permissionRequired, c.desc)
+		err := a.Authorize(c.id)
+		assert.Nil(t, err)
+		copiedBody := a.Body()
+		assert.Equal(t, a.body.UUID, copiedBody.UUID, c.desc)
+		assert.Equal(t, a.body.Permission, copiedBody.Permission, c.desc)
+		assert.Equal(t, a.body.ExpirationTimestamp, copiedBody.ExpirationTimestamp, c.desc)
+		copiedBody.UUID = "mutate"
+		assert.NotEqual(t, a.body.UUID, copiedBody.UUID, c.desc)
+	}
+}
+
+func TestInvalidate(t *testing.T) {
+	cases := []struct {
+		desc          string
+		id            *pbauth.Identification
+		requiredPerm  Permission
+		requiredToken TokenType
+	}{
+		{"test for valid admin token",
+			&pbauth.Identification{
+				Token:  valid512JWTAdminTokenString,
+				Secret: validSecret,
+			}, User, Jwt,
+		},
+		{"test for valid user token",
+			&pbauth.Identification{
+				Token:  valid256JWTUserTokenString,
+				Secret: validSecret,
+			}, User, Jwt,
+		},
+	}
+	for _, c := range cases {
+		a := NewAuthority(c.requiredToken, c.requiredPerm)
+		assert.Equal(t, c.requiredPerm, a.permissionRequired, c.desc)
+		err := a.Authorize(c.id)
+		assert.Nil(t, err)
 		a.Invalidate()
 		assert.Nil(t, a.id, c.desc)
 		assert.Nil(t, a.header, c.desc)
