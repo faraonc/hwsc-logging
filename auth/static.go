@@ -257,3 +257,27 @@ func isEquivalentHash(alg Algorithm, signatureValue string, secret *pbauth.Secre
 	}
 	return hashedValue == actualHashedValue
 }
+
+// extractUUID takes in a token string and extracts the UUID from the body.
+// Returns the uuid or an empty string due to an error.
+func extractUUID(tokenString string) string {
+	tokenSignature := strings.Split(tokenString, ".")
+	if len(tokenSignature) != 3 {
+		return ""
+	}
+	decodedBody, err := base64Decode(tokenSignature[1])
+	if err != nil {
+		return ""
+	}
+	body := &Body{}
+	if err := json.Unmarshal([]byte(decodedBody), body); err != nil {
+		return ""
+	}
+	if body == nil {
+		return ""
+	}
+	if err := validation.ValidateUserUUID(body.UUID); err != nil {
+		return ""
+	}
+	return body.UUID
+}

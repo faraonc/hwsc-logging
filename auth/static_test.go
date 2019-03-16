@@ -456,3 +456,19 @@ func TestIsEquivalentHash(t *testing.T) {
 		assert.Equal(t, c.expOutput, actOuput, c.desc)
 	}
 }
+
+func TestExtractUUID(t *testing.T) {
+	cases := []struct {
+		desc        string
+		tokenString string
+		expOutput   string
+	}{
+		{"test for empty token string", "", ""},
+		{"test for invalid token string", "asdadqweqw131231", ""},
+		{"test valid token string", valid256JWTUserTokenString, "22d3x3wm2nnrdfzp0tka2vw9dx"},
+	}
+	for _, c := range cases {
+		actOuput := extractUUID(c.tokenString)
+		assert.Equal(t, c.expOutput, actOuput, c.desc)
+	}
+}
