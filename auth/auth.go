@@ -49,7 +49,7 @@ func (a *Authority) Body() *Body {
 	}
 }
 
-// Authorize the identification and generates the body.
+// Authorize the identification and generates its fields.
 // Returns an error if not authorized.
 func (a *Authority) Authorize(id *pbauth.Identification) error {
 	if err := ValidateIdentification(id); err != nil {
