@@ -253,7 +253,7 @@ func TestNewToken(t *testing.T) {
 		},
 		{"test for valid admin token", valid512JWT, validAdminBody, validSecret, false, nil, valid512JWTAdminTokenString},
 		{"test for invalid 256 Alg with admin", valid256JWT, validAdminBody, validSecret, true, consts.ErrInvalidPermission, ""},
-		{"test for JWT support only", valid256NoType, validUserBody, validSecret, true, consts.ErrInvalidJWT, ""},
+		{"test for JWT/JET support only", valid256NoType, validUserBody, validSecret, true, consts.ErrUnknownTokenType, ""},
 		{"test for valid user token", valid256JWT, validUserBody, validSecret, false, nil, valid256JWTUserTokenString},
 		{"test for expired body", valid256JWT, expiredUserBody, validSecret, true, consts.ErrExpiredBody, ""},
 	}
@@ -306,7 +306,7 @@ func TestGetTokenSignature(t *testing.T) {
 		},
 		{"test for valid admin token", valid512JWT, validAdminBody, validSecret, false, nil, valid512JWTAdminTokenString},
 		{"test for invalid 256 Alg with admin", valid256JWT, validAdminBody, validSecret, true, consts.ErrInvalidPermission, ""},
-		{"test for JWT support only", valid256NoType, validUserBody, validSecret, true, consts.ErrInvalidJWT, ""},
+		{"test for JWT/JET support only", valid256NoType, validUserBody, validSecret, true, consts.ErrUnknownTokenType, ""},
 		{"test for valid user token", valid256JWT, validUserBody, validSecret, false, nil, valid256JWTUserTokenString},
 		{"test for expired body", valid256JWT, expiredUserBody, validSecret, true, consts.ErrExpiredBody, ""},
 	}

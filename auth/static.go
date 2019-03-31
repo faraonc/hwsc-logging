@@ -110,9 +110,9 @@ func NewToken(header *Header, body *Body, secret *pbauth.Secret) (string, error)
 	if body.Permission == Admin && header.Alg != Hs512 {
 		return "", consts.ErrInvalidPermission
 	}
-	// Currently supports JWT
-	if header.TokenTyp != Jwt {
-		return "", consts.ErrInvalidJWT
+	// Currently supports JWT, JET
+	if header.TokenTyp != Jwt && header.TokenTyp != Jet {
+		return "", consts.ErrUnknownTokenType
 	}
 	tokenString, err := getTokenSignature(header, body, secret)
 	if err != nil {
@@ -136,8 +136,8 @@ func getTokenSignature(header *Header, body *Body, secret *pbauth.Secret) (strin
 	if body.Permission == Admin && header.Alg != Hs512 {
 		return "", consts.ErrInvalidPermission
 	}
-	if header.TokenTyp != Jwt {
-		return "", consts.ErrInvalidJWT
+	if header.TokenTyp != Jwt && header.TokenTyp != Jet {
+		return "", consts.ErrUnknownTokenType
 	}
 	// Token Signature = <encoded header>.<encoded body>.<hashed(<encoded header>.<encoded body>)>
 	// 1. Encode the header
