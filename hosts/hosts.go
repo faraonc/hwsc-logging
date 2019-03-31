@@ -53,6 +53,6 @@ type DocumentDBHost struct {
 
 // UserAccount for creating user
 type UserAccount struct {
-	email    string `json: "dummy_email"`
-	password string `json: "dummy_password"`
+	Email    string `json:"dummy_email"`
+	Password string `json:"dummy_password"`
 }
