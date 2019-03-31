@@ -22,7 +22,6 @@ var (
 	ErrInvalidEncodedBody           = errors.New("invalid encoded body")
 	ErrInvalidSignatureValue        = errors.New("invalid signature value")
 	ErrNoHashAlgorithm              = errors.New("no hashing algorithm")
-	ErrInvalidJWT                   = errors.New("JWT only")
 	ErrInvalidRequiredTokenType     = errors.New("invalid required token type")
 	ErrUnknownTokenType             = errors.New("unknown token type")
 	ErrUnknownAlgorithm             = errors.New("unknown algorithm")
