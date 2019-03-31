@@ -50,3 +50,9 @@ type DocumentDBHost struct {
 	// Collection database collection name
 	Collection string `json:"collection"`
 }
+
+// UserAccount for creating user
+type UserAccount struct {
+	email    string `json: "dummy_email"`
+	password string `json: "dummy_password"`
+}
