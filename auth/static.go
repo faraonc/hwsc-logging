@@ -39,7 +39,7 @@ func ValidateHeader(header *Header) error {
 		return consts.ErrNilHeader
 	}
 	tokenType := header.TokenTyp
-	if tokenType < NoType || tokenType > Jwt {
+	if tokenType < NoType || tokenType > Jet {
 		return consts.ErrUnknownTokenType
 	}
 	alg := header.Alg

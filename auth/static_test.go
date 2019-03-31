@@ -92,7 +92,7 @@ func TestValidateHeader(t *testing.T) {
 		},
 		{"test for over token type",
 			&Header{
-				TokenTyp: Jwt + 1,
+				TokenTyp: Jet + 1,
 			}, true, consts.ErrUnknownTokenType,
 		},
 		{"test for negative alg",
