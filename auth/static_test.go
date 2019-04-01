@@ -468,7 +468,7 @@ func TestExtractUUID(t *testing.T) {
 		{"test valid token string", valid256JWTUserTokenString, "22d3x3wm2nnrdfzp0tka2vw9dx"},
 	}
 	for _, c := range cases {
-		actOuput := extractUUID(c.tokenString)
+		actOuput := ExtractUUID(c.tokenString)
 		assert.Equal(t, c.expOutput, actOuput, c.desc)
 	}
 }

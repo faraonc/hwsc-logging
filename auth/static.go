@@ -258,9 +258,9 @@ func isEquivalentHash(alg Algorithm, signatureValue string, secret *pbauth.Secre
 	return hashedValue == actualHashedValue
 }
 
-// extractUUID takes in a token string and extracts the UUID from the body.
+// ExtractUUID takes in a token string and extracts the UUID from the body.
 // Returns the uuid or an empty string due to an error.
-func extractUUID(tokenString string) string {
+func ExtractUUID(tokenString string) string {
 	tokenSignature := strings.Split(tokenString, ".")
 	if len(tokenSignature) != 3 {
 		return ""
