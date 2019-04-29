@@ -79,7 +79,7 @@ func ValidateSecret(secret *pbauth.Secret) error {
 		return consts.ErrEmptySecret
 	}
 	createTime := secret.CreatedTimestamp
-	if createTime == 0 || createTime >= time.Now().UTC().Unix() {
+	if createTime == 0 || createTime > time.Now().UTC().Unix() {
 		return consts.ErrInvalidSecretCreateTimestamp
 	}
 	if isExpired(secret.ExpirationTimestamp) {
