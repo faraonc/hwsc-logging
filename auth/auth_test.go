@@ -180,6 +180,41 @@ func TestBody(t *testing.T) {
 	}
 }
 
+func TestHeader(t *testing.T) {
+	cases := []struct {
+		desc          string
+		id            *pbauth.Identification
+		isExpErr      bool
+		expErr        error
+		requiredPerm  Permission
+		requiredToken TokenType
+	}{
+		{"test for valid admin token",
+			&pbauth.Identification{
+				Token:  valid512JWTAdminTokenString,
+				Secret: validSecret,
+			}, false, nil, User, Jwt,
+		},
+		{"test for valid user token",
+			&pbauth.Identification{
+				Token:  valid256JWTUserTokenString,
+				Secret: validSecret,
+			}, false, nil, User, Jwt,
+		},
+	}
+	for _, c := range cases {
+		a := NewAuthority(c.requiredToken, c.requiredPerm)
+		assert.Equal(t, c.requiredPerm, a.permissionRequired, c.desc)
+		err := a.Authorize(c.id)
+		assert.Nil(t, err)
+		copiedHeader := a.Header()
+		assert.Equal(t, a.header.Alg, copiedHeader.Alg, c.desc)
+		assert.Equal(t, a.header.TokenTyp, copiedHeader.TokenTyp, c.desc)
+		copiedHeader.Alg = NoAlg
+		assert.NotEqual(t, a.header.Alg, copiedHeader.Alg, c.desc)
+	}
+}
+
 func TestInvalidate(t *testing.T) {
 	cases := []struct {
 		desc          string

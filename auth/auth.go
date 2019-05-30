@@ -49,6 +49,18 @@ func (a *Authority) Body() *Body {
 	}
 }
 
+// Header extracts a copy of the header.
+func (a *Authority) Header() *Header {
+	if a.header == nil {
+		return nil
+	}
+
+	return &Header{
+		Alg:      a.header.Alg,
+		TokenTyp: a.header.TokenTyp,
+	}
+}
+
 // Authorize the identification and generates its fields.
 // Returns an error if not authorized.
 func (a *Authority) Authorize(id *pbauth.Identification) error {
