@@ -1,0 +1,24 @@
+version: '3'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.1.1
+    container_name: test-elasticsearch
+    ports:
+      - "${hosts_es_http_port}:${hosts_es_http_port}"
+      - "${hosts_es_tcp_port}:${hosts_es_tcp_port}"
+    environment:
+      - discovery.type=single-node
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.1.1
+    container_name: test-logstash
+    ports:
+      - "${hosts_logstash_tcp_port}:${hosts_logstash_tcp_port}"
+      - "${hosts_logstash_port}:${hosts_logstash_port}"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.1.1
+    container_name: test-kibana
+    ports:
+      - "${hosts_kibana_port}:${hosts_kibana_port}"
