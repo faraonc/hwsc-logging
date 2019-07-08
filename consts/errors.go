@@ -26,4 +26,7 @@ var (
 	ErrUnknownTokenType             = errors.New("unknown token type")
 	ErrUnknownAlgorithm             = errors.New("unknown algorithm")
 	ErrUnknownPermission            = errors.New("unknown permission")
+	ErrInvalidTokenSize             = errors.New("invalid token size")
+	ErrInvalidTimeStamp             = errors.New("zero timestamp")
+	ErrInvalidNumberOfDays          = errors.New("invalid number of days to add to expiration timestamp")
 )

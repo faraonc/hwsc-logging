@@ -3,6 +3,7 @@ package auth
 import (
 	"bytes"
 	"crypto/hmac"
+	cryptorand "crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/base64"
@@ -13,7 +14,19 @@ import (
 	"github.com/hwsc-org/hwsc-lib/validation"
 	"hash"
 	"strings"
+	"sync"
 	"time"
+)
+
+const (
+	utc                = "UTC"
+	emailTokenByteSize = 32
+	daysInOneWeek      = 7
+	daysInTwoWeeks     = 14
+)
+
+var (
+	keyGenLocker sync.Mutex
 )
 
 // ValidateIdentification validates Identification along with the embedded Secret.
@@ -280,4 +293,99 @@ func ExtractUUID(tokenString string) string {
 		return ""
 	}
 	return body.UUID
+}
+
+// GenerateSecretKey generates a base64 URL-safe string
+// built from securely generated random bytes.
+// Number of bytes is determined by tokenSize.
+// Return error if system's secure random number generator fails.
+func GenerateSecretKey(tokenSize int) (string, error) {
+	if tokenSize <= 0 {
+		return "", consts.ErrInvalidTokenSize
+	}
+
+	keyGenLocker.Lock()
+	defer keyGenLocker.Unlock()
+
+	randomBytes := make([]byte, tokenSize)
+	_, err := cryptorand.Read(randomBytes)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.URLEncoding.EncodeToString(randomBytes), nil
+}
+
+// GenerateExpirationTimestamp returns the expiration date set with addDays parameter.
+// Currently only adds number of days to currentTimestamp.
+// Returns error if date object is nil or error with loading location.
+func GenerateExpirationTimestamp(currentTimestamp time.Time, addDays int) (*time.Time, error) {
+	if currentTimestamp.IsZero() {
+		return nil, consts.ErrInvalidTimeStamp
+	}
+
+	if addDays <= 0 {
+		return nil, consts.ErrInvalidNumberOfDays
+	}
+
+	timeZonedTimestamp := currentTimestamp
+	if currentTimestamp.Location().String() != utc {
+		timeZonedTimestamp = currentTimestamp.UTC()
+	}
+
+	// addDays to current weekday to get to addDays later
+	// ie: adding 7 days to current weekday gets you one week later timestamp
+	modifiedTimestamp := timeZonedTimestamp.AddDate(0, 0, addDays)
+
+	// reset time to 3 AM
+	expirationTimestamp := time.Date(modifiedTimestamp.Year(), modifiedTimestamp.Month(), modifiedTimestamp.Day(),
+		3, 0, 0, 0, timeZonedTimestamp.Location())
+
+	return &expirationTimestamp, nil
+}
+
+// GenerateEmailIdentification takes the user's uuid and permission to generate an email token for verification.
+// Returns an identification containing the secret and token string.
+func GenerateEmailIdentification(uuid string, permission string) (*pbauth.Identification, error) {
+	if err := validation.ValidateUserUUID(uuid); err != nil {
+		return nil, err
+	}
+	permissionLevel, ok := PermissionEnumMap[permission]
+	if !ok {
+		return nil, consts.ErrInvalidPermission
+	}
+	emailSecretKey, err := GenerateSecretKey(emailTokenByteSize)
+	if err != nil {
+		return nil, err
+	}
+	// subtract a second because the test runs fast causing our check to fail
+	emailTokenCreationTime := time.Now().UTC().Add(time.Duration(-1) * time.Second)
+	emailTokenExpirationTime, err := GenerateExpirationTimestamp(emailTokenCreationTime, daysInTwoWeeks)
+	if err != nil {
+		return nil, err
+	}
+
+	header := &Header{
+		Alg:      AlgorithmMap[UserRegistration],
+		TokenTyp: Jet,
+	}
+	body := &Body{
+		UUID:                uuid,
+		Permission:          permissionLevel,
+		ExpirationTimestamp: emailTokenExpirationTime.Unix(),
+	}
+	secret := &pbauth.Secret{
+		Key:                 emailSecretKey,
+		CreatedTimestamp:    emailTokenCreationTime.Unix(),
+		ExpirationTimestamp: emailTokenExpirationTime.Unix(),
+	}
+	emailToken, err := NewToken(header, body, secret)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbauth.Identification{
+		Token:  emailToken,
+		Secret: secret,
+	}, nil
 }
