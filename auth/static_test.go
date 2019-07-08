@@ -5,6 +5,7 @@ import (
 	pbauth "github.com/hwsc-org/hwsc-api-blocks/protobuf/lib"
 	"github.com/hwsc-org/hwsc-lib/consts"
 	"github.com/stretchr/testify/assert"
+	"sync"
 	"testing"
 	"time"
 )
@@ -470,5 +471,133 @@ func TestExtractUUID(t *testing.T) {
 	for _, c := range cases {
 		actOuput := ExtractUUID(c.tokenString)
 		assert.Equal(t, c.expOutput, actOuput, c.desc)
+	}
+}
+
+func TestGenerateSecretKey(t *testing.T) {
+	// NOTE: unable to force a race condition given the nature of randomByte used in generateEmailToken()
+	// but functionality is same as generateUUID and that's been tested for race conditions
+
+	// test for invalid token byte size
+	token, err := GenerateSecretKey(0)
+	assert.EqualError(t, err, consts.ErrInvalidTokenSize.Error())
+	assert.Equal(t, "", token)
+
+	token, err = GenerateSecretKey(-256)
+	assert.EqualError(t, err, consts.ErrInvalidTokenSize.Error())
+	assert.Equal(t, "", token)
+
+	// test race condition
+	const count = 100
+	var tokens sync.Map
+	var wg sync.WaitGroup
+
+	wg.Add(count)
+	start := make(chan struct{})
+
+	for i := 0; i < count; i++ {
+		go func() {
+			<-start
+			defer wg.Done()
+
+			// store tokens in map to check for duplicates
+			token, err := GenerateSecretKey(emailTokenByteSize)
+			assert.Nil(t, err)
+			assert.NotEqual(t, "", token)
+
+			_, ok := tokens.Load(token)
+			assert.Equal(t, false, ok)
+
+			tokens.Store(token, true)
+		}()
+	}
+
+	close(start)
+	wg.Wait()
+}
+
+func TestGenerateExpirationTimestamp(t *testing.T) {
+	desc := "test zero value for time"
+	date, err := GenerateExpirationTimestamp(time.Time{}, 0)
+	assert.EqualError(t, err, consts.ErrInvalidTimeStamp.Error(), desc)
+	assert.Nil(t, date, desc)
+
+	desc = "test zero number of days"
+	date, err = GenerateExpirationTimestamp(time.Now(), 0)
+	assert.EqualError(t, err, consts.ErrInvalidNumberOfDays.Error(), desc)
+	assert.Nil(t, date, desc)
+
+	desc = "test negative number of days"
+	date, err = GenerateExpirationTimestamp(time.Now(), -5)
+	assert.EqualError(t, err, consts.ErrInvalidNumberOfDays.Error(), desc)
+	assert.Nil(t, date, desc)
+
+	desc7days := "test adding 7 days to current date to various days of the week"
+	desc14days := "test adding 14 days to current date to various days of the week"
+	currentDate := time.Now()
+
+	// non UTC date
+	timeZonedDate := currentDate.UTC()
+	expirationHour := 3
+
+	cases := []struct {
+		date    time.Time
+		addDays time.Weekday
+	}{
+		{currentDate, daysInOneWeek},
+		{currentDate.AddDate(0, 0, 1), daysInOneWeek},
+		{currentDate.AddDate(0, 0, 2), daysInOneWeek},
+		{currentDate.AddDate(0, 0, 3), daysInOneWeek},
+		{timeZonedDate.AddDate(0, 0, 4), daysInOneWeek},
+		{timeZonedDate.AddDate(0, 0, 5), daysInOneWeek},
+		{timeZonedDate.AddDate(0, 0, 6), daysInOneWeek},
+		{currentDate, daysInTwoWeeks},
+		{currentDate.AddDate(0, 0, 1), daysInTwoWeeks},
+		{currentDate.AddDate(0, 0, 2), daysInTwoWeeks},
+		{currentDate.AddDate(0, 0, 3), daysInTwoWeeks},
+		{timeZonedDate.AddDate(0, 0, 4), daysInTwoWeeks},
+		{timeZonedDate.AddDate(0, 0, 5), daysInTwoWeeks},
+		{timeZonedDate.AddDate(0, 0, 6), daysInTwoWeeks},
+	}
+
+	for _, c := range cases {
+		expirationDate, err := GenerateExpirationTimestamp(c.date, int(c.addDays))
+
+		if c.date.Location().String() != utc {
+			c.date = c.date.UTC()
+		}
+
+		if c.addDays == daysInOneWeek {
+			desc = desc7days
+		} else {
+			desc = desc14days
+		}
+
+		assert.Nil(t, err, desc)
+		assert.Equal(t, (c.date.Weekday()+c.addDays)%c.addDays, expirationDate.Weekday(), desc)
+		assert.Equal(t, expirationHour, expirationDate.Hour(), desc)
+	}
+}
+
+func TestGenerateEmailIdentification(t *testing.T) {
+	cases := []struct {
+		uuid       string
+		permission string
+		isExpError bool
+		expError   error
+	}{
+		{"", "", true, consts.ErrInvalidUUID},
+		{"01d1na5ekzr7p98hragv5fmvx", "", true, consts.ErrInvalidUUID},
+		{"01d3x3wm2nnrdfzp0tka2vw9dx", "", true, consts.ErrInvalidPermission},
+		{"01d3x3wm2nnrdfzp0tka2vw9dx", "SuperAdmin", true, consts.ErrInvalidPermission},
+		{"01d3x3wm2nnrdfzp0tka2vw9dx", "USER", false, nil},
+	}
+	for _, c := range cases {
+		id, err := GenerateEmailIdentification(c.uuid, c.permission)
+		if c.isExpError {
+			assert.EqualError(t, err, c.expError.Error())
+		} else {
+			assert.NotNil(t, id)
+		}
 	}
 }

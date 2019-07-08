@@ -19,13 +19,14 @@ import (
 )
 
 const (
-	utc = "UTC"
+	utc                = "UTC"
+	emailTokenByteSize = 32
+	daysInOneWeek      = 7
+	daysInTwoWeeks     = 14
 )
 
 var (
-	keyGenLocker       sync.Mutex
-	emailTokenByteSize = 32
-	daysInTwoWeeks     = 14
+	keyGenLocker sync.Mutex
 )
 
 // ValidateIdentification validates Identification along with the embedded Secret.
@@ -294,12 +295,11 @@ func ExtractUUID(tokenString string) string {
 	return body.UUID
 }
 
-// generateSecretKey generates a base64 URL-safe string
+// GenerateSecretKey generates a base64 URL-safe string
 // built from securely generated random bytes.
 // Number of bytes is determined by tokenSize.
 // Return error if system's secure random number generator fails.
-// TODO: testing
-func generateSecretKey(tokenSize int) (string, error) {
+func GenerateSecretKey(tokenSize int) (string, error) {
 	if tokenSize <= 0 {
 		return "", consts.ErrInvalidTokenSize
 	}
@@ -316,11 +316,10 @@ func generateSecretKey(tokenSize int) (string, error) {
 	return base64.URLEncoding.EncodeToString(randomBytes), nil
 }
 
-// generateExpirationTimestamp returns the expiration date set with addDays parameter.
+// GenerateExpirationTimestamp returns the expiration date set with addDays parameter.
 // Currently only adds number of days to currentTimestamp.
 // Returns error if date object is nil or error with loading location.
-// TODO: testing
-func generateExpirationTimestamp(currentTimestamp time.Time, addDays int) (*time.Time, error) {
+func GenerateExpirationTimestamp(currentTimestamp time.Time, addDays int) (*time.Time, error) {
 	if currentTimestamp.IsZero() {
 		return nil, consts.ErrInvalidTimeStamp
 	}
@@ -347,7 +346,6 @@ func generateExpirationTimestamp(currentTimestamp time.Time, addDays int) (*time
 
 // GenerateEmailIdentification takes the user's uuid and permission to generate an email token for verification.
 // Returns an identification containing the secret and token string.
-// TODO: testing
 func GenerateEmailIdentification(uuid string, permission string) (*pbauth.Identification, error) {
 	if err := validation.ValidateUserUUID(uuid); err != nil {
 		return nil, err
@@ -356,13 +354,13 @@ func GenerateEmailIdentification(uuid string, permission string) (*pbauth.Identi
 	if !ok {
 		return nil, consts.ErrInvalidPermission
 	}
-	emailSecretKey, err := generateSecretKey(emailTokenByteSize)
+	emailSecretKey, err := GenerateSecretKey(emailTokenByteSize)
 	if err != nil {
 		return nil, err
 	}
 	// subtract a second because the test runs fast causing our check to fail
 	emailTokenCreationTime := time.Now().UTC().Add(time.Duration(-1) * time.Second)
-	emailTokenExpirationTime, err := generateExpirationTimestamp(emailTokenCreationTime, daysInTwoWeeks)
+	emailTokenExpirationTime, err := GenerateExpirationTimestamp(emailTokenCreationTime, daysInTwoWeeks)
 	if err != nil {
 		return nil, err
 	}
