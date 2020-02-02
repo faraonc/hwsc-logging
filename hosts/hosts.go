@@ -38,10 +38,22 @@ type SMTPHost struct {
 
 // DocumentDBHost represents the Document database
 type DocumentDBHost struct {
-	// Writer address for writing to MongoDB server
+	// Host of MongoDB
+	Host string `json:"host"`
+	
+	// Port of MongoDB
+	Port string `json:"port"`
+	
+	// WriterPW password
+	WriterPW string `json:"writer_pw"`
+	
+	// ReaderPW password
+	ReaderPW string `json:"reader_pw"`
+	
+	// Writer to MongoDB server
 	Writer string `json:"writer"`
 
-	// Reader address for reading to MongoDB server
+	// Reader to MongoDB server
 	Reader string `json:"reader"`
 
 	// Name database name
